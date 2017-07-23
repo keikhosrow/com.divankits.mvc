@@ -4,6 +4,6 @@ import java.lang.annotation.Annotation;
 
 public abstract class ModelModifier {
 
-    public abstract void modify( IModel model);
+    public abstract void modify(IModel model);
 
 }

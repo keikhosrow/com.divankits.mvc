@@ -11,6 +11,7 @@ public interface IModel {
     String getModelId();
     Field getFieldByName(String name) throws NoSuchFieldException;
     Field[] getFields();
+    String getName();
     Object getFieldValue(String field) throws NoSuchFieldException, IllegalAccessException;
     void setFieldValue(String field , Object value) throws NoSuchFieldException , IllegalAccessException;
     String toString();

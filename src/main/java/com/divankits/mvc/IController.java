@@ -21,11 +21,9 @@ public interface IController {
 
     FragmentManager getFragmentManager();
 
-    void onFieldChanged(BindDetails details, Object oldValue);
-
     void onSubmit(IModel model);
 
-    void onCreate(View view);
+    void setOnModelChangedEventListener(IOnModelChangedEventListener listener);
 
     ValidationResult getModelState();
 

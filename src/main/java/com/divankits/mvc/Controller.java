@@ -5,6 +5,7 @@ import android.app.FragmentManager;
 import android.app.FragmentTransaction;
 import android.content.res.Resources;
 import android.support.annotation.AnimatorRes;
+import android.support.annotation.Nullable;
 import android.view.View;
 
 import com.divankits.mvc.annotations.Submit;
@@ -22,18 +23,27 @@ import java.util.List;
 public abstract class Controller implements IController {
 
     private IModelRenderer renderer;
-
     private Activity activity;
-
     private int placeholder;
-
     private int[] animations;
+    private List<IModel> stack;
+    private IOnModelChangedEventListener mListener;
 
     public Controller(Activity activity, int placeholder) {
 
         this.activity = activity;
 
         this.placeholder = placeholder;
+
+        stack = new ArrayList<>();
+
+    }
+
+    public void setOnModelChangedEventListener(IOnModelChangedEventListener listener){
+
+
+        this.mListener = listener;
+
 
     }
 
@@ -71,46 +81,97 @@ public abstract class Controller implements IController {
 
     public void setModel(IModel model) {
 
+        setModel(model, true);
+
+    }
+
+    public void setModel(IModel model, boolean addToStack) {
+
         FragmentTransaction ft = getFragmentManager().beginTransaction();
 
-        if (animations != null) {
-
-            if (animations.length == 2) {
-
+        if (animations != null)
+            if (animations.length == 2)
                 ft.setCustomAnimations(animations[0], animations[1]);
-
-            } else {
-
+            else
                 ft.setCustomAnimations(animations[0], animations[1], animations[2], animations[3]);
 
-            }
 
-        }
+        if (getRenderer() != null && getRenderer().getModel() != null && addToStack)
+            addToStack();
 
         setRenderer(new ModelRenderer())
                 .setModel(model)
                 .setOnModelChangedEventListener(new IOnModelChangedEventListener() {
                     @Override
                     public void onFieldChanged(BindDetails details, Object oldValue) {
-                        Controller.this.onFieldChanged(details, oldValue);
+
+                        if(mListener != null)
+                            mListener.onFieldChanged(details , oldValue);
+
                     }
 
                     @Override
                     public void onSubmit(IModel model) {
+
                         Controller.this.onSubmit(model);
+
+                        Controller.this.clearStack();
+
+                        if(mListener != null)
+                            mListener.onSubmit(model);
+
                     }
 
                     @Override
                     public void onCreate(View view) {
-                        Controller.this.onCreate(view);
+
+                        if(mListener != null)
+                            mListener.onCreate(view);
+
                     }
                 });
 
-        ft.replace(placeholder, (ModelRenderer) renderer);
 
-        ft.addToBackStack(null);
+        ft.replace(placeholder, (ModelRenderer) getRenderer()).commit();
 
-        ft.commit();
+    }
+
+    private void addToStack() {
+
+        stack.add(getRenderer().getModel());
+
+    }
+
+    public int getStackEntryCount() {
+
+        return stack.size();
+
+    }
+
+    public void clearStack() {
+
+        stack.clear();
+
+    }
+
+    @Nullable
+    private IModel popStack() {
+
+        if (getStackEntryCount() > 0)
+            return stack.remove(stack.size() - 1);
+
+        return null;
+
+    }
+
+    public boolean popBackStack() {
+
+        IModel model = popStack();
+
+        if(model != null)
+            setModel(model, false);
+
+        return model != null;
 
     }
 
@@ -169,11 +230,6 @@ public abstract class Controller implements IController {
 
     }
 
-    public void onFieldChanged(BindDetails details, Object oldValue) {
-    }
-
-    public abstract void onCreate(View view);
-
     public ValidationResult getModelState() {
 
         Resources res = getActivity().getResources();
@@ -201,7 +257,6 @@ public abstract class Controller implements IController {
                         continue;
 
 
-
                     clazz = Class.forName(name);
 
                     Constructor<?> ctor = clazz.getConstructor(Resources.class);
@@ -225,14 +280,13 @@ public abstract class Controller implements IController {
 
     }
 
-
-    private ValidationResult validate(ValidatorClassHandler... validators) {
+    private ValidationResult validate(ValidatorClassHandler... handlers) {
 
         ValidationResult result = new ValidationResult();
 
-        for (ValidatorClassHandler validator : validators) {
+        for (ValidatorClassHandler handler : handlers) {
 
-            result.concat(validator.Validator.validate(validator.Annotation.annotationType(), getRenderer()));
+            result.concat(handler.validator.validate(handler.annotation.annotationType(), getRenderer()));
 
         }
 
@@ -242,13 +296,14 @@ public abstract class Controller implements IController {
 
     private class ValidatorClassHandler {
 
-        public Validator Validator;
-        public Annotation Annotation;
+        private Validator validator;
+
+        private Annotation annotation;
 
         public ValidatorClassHandler(Validator validator, Annotation annotation) {
 
-            this.Validator = validator;
-            this.Annotation = annotation;
+            this.validator = validator;
+            this.annotation = annotation;
 
         }
 

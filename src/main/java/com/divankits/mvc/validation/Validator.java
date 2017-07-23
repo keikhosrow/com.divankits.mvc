@@ -66,6 +66,9 @@ public abstract class Validator {
 
                 BindDetails details = renderer.getBindDetails(field);
 
+                if (details == null || details.Target == null)
+                    continue;
+
                 Object value = model.getFieldValue(field.getName());
 
                 if (!isValid(model , field , value , modifier)) {
@@ -75,9 +78,7 @@ public abstract class Validator {
                     if (error.isEmpty())
                         error = error.concat(getErrorDefaultMessage(field , modifier).toString());
 
-                    result.Errors.add(new ValidationError(getErrorCode(), error, field.getName()));
-
-                    if (details == null || details.Target == null) continue;
+                    result.getErrors().add(new ValidationError(getErrorCode(), error, field.getName()));
 
                     if (details.Target instanceof IValidationSupportElement)
                         ((IValidationSupportElement) details.Target).showInvalidStyle();

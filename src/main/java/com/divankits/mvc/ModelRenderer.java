@@ -22,7 +22,7 @@ public class ModelRenderer extends Fragment implements IModelRenderer {
 
     private IModel model;
 
-    private android.view.View view;
+    private  android.view.View mView;
 
     public ModelRenderer() {
 
@@ -36,12 +36,12 @@ public class ModelRenderer extends Fragment implements IModelRenderer {
 
         try {
 
-            view = inflater.inflate(getViewId(), container, false);
+            mView = inflater.inflate(getViewId(), container, false);
 
             if (changeListener != null)
-                changeListener.onCreate(view);
+                changeListener.onCreate(mView);
 
-            return view;
+            return mView;
 
         } catch (NullPointerException e) {
 
@@ -68,7 +68,7 @@ public class ModelRenderer extends Fragment implements IModelRenderer {
 
             int submitId = getSubmitId();
 
-            android.view.View submitBtn = view.findViewById(submitId);
+            android.view.View submitBtn = getView().findViewById(submitId);
 
             if (submitBtn != null) {
 
@@ -180,13 +180,20 @@ public class ModelRenderer extends Fragment implements IModelRenderer {
     }
 
     @Override
+    public android.view.View getView(){
+
+        return mView;
+
+    }
+
+    @Override
     public BindDetails getBindDetails(Field field) {
 
         if (!field.isAnnotationPresent(Bind.class)) return null;
 
         Bind bind = field.getAnnotation(Bind.class);
 
-        Object elem = view.findViewById(bind.value());
+        Object elem = getView().findViewById(bind.value());
 
         BindDetails details = new BindDetails();
         details.Event = bind.event();
@@ -215,12 +222,5 @@ public class ModelRenderer extends Fragment implements IModelRenderer {
 
     }
 
-
-    @Override
-    public android.view.View getView() {
-
-        return view;
-
-    }
 
 }

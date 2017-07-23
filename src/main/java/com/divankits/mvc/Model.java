@@ -119,4 +119,12 @@ public abstract class Model implements IModel {
     }
 
 
+    @Override
+    public String getName() {
+
+        return getClass().getSimpleName();
+
+    }
+
+
 }

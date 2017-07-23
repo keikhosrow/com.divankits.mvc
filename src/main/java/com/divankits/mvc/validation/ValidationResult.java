@@ -1,41 +1,54 @@
 package com.divankits.mvc.validation;
 
-
 import java.util.ArrayList;
 
 public class ValidationResult {
 
-    public ArrayList<ValidationError> Errors;
+    private ArrayList<ValidationError> errors;
 
-    public ValidationResult() {
+    public ArrayList<ValidationError> getErrors(){
 
-        Errors = new ArrayList<>();
+        if(errors == null)
+            errors = new ArrayList<>();
 
-    }
-
-    public void concat(ValidationResult result){
-
-        Errors.addAll(result.Errors);
+        return errors;
 
     }
 
     public boolean isValid() {
 
-        return Errors.size() == 0;
+        return getErrors().size() == 0;
 
     }
 
-    public String trace() {
+    public String toString(){
 
         String status = "";
 
-        for (ValidationError error : Errors) {
+        for (ValidationError error : getErrors()) {
 
             status = status.concat(error.Message + "\n");
 
         }
 
         return status;
+
+    }
+
+    public void concat(ValidationResult result){
+
+        getErrors().addAll(result.getErrors());
+
+    }
+
+    /**
+     * @deprecated
+     * Use toString() instead
+     */
+    @Deprecated
+    public String trace() {
+
+        return toString();
 
     }
 
