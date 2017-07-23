@@ -14,8 +14,8 @@ public @interface Bind {
     int value();
     Events event() default Events.None;
     boolean autoUpdate() default true;
-    String getter() default "getValue";
-    String setter() default "setValue";
+    String get() default "getValue";
+    String set() default "setValue";
 
 
     enum Events {

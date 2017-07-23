@@ -19,9 +19,9 @@ public class UniqueModifier extends ModelModifier {
 
             String name = field.getName();
 
-            Unique.GeneratePolicy policy = field.getAnnotation(Unique.class).value();
+            Unique.GenerateType policy = field.getAnnotation(Unique.class).value();
 
-            Object newValue = policy == Unique.GeneratePolicy.Guid ? getRandomGuid() : getRandomHex();
+            Object newValue = policy == Unique.GenerateType.Guid ? getRandomGuid() : getRandomHex();
 
             try {
 

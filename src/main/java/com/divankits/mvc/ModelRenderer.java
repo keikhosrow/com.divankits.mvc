@@ -200,8 +200,8 @@ public class ModelRenderer extends Fragment implements IModelRenderer {
         details.Target = elem.getClass().cast(elem);
         details.FieldName = field.getName();
         details.AutoUpdate = bind.autoUpdate();
-        details.Getter = bind.getter();
-        details.Setter = bind.setter();
+        details.Getter = bind.get();
+        details.Setter = bind.set();
         return details;
 
     }

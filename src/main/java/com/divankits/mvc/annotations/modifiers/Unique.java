@@ -10,9 +10,9 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface Unique {
 
-    GeneratePolicy value() default GeneratePolicy.Number;
+    GenerateType value() default GenerateType.Number;
 
-    enum GeneratePolicy {
+    enum GenerateType {
 
         Number , Guid
 

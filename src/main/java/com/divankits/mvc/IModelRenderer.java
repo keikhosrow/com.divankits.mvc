@@ -8,7 +8,6 @@ import java.lang.reflect.Field;
 
 public interface IModelRenderer {
 
-
     IModel getModel();
     int getViewId();
     int getSubmitId();
