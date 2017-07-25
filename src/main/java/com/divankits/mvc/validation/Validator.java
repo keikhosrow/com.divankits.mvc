@@ -3,7 +3,7 @@ package com.divankits.mvc.validation;
 
 import android.content.res.Resources;
 
-import com.divankits.mvc.BindDetails;
+import com.divankits.mvc.BoundData;
 import com.divankits.mvc.IModel;
 import com.divankits.mvc.IModelRenderer;
 
@@ -64,7 +64,7 @@ public abstract class Validator {
 
                 A modifier = field.getAnnotation(validator);
 
-                BindDetails details = renderer.getBindDetails(field);
+                BoundData details = renderer.getBoundData(field);
 
                 if (details == null || details.Target == null)
                     continue;

@@ -3,11 +3,13 @@ package com.divankits.mvc;
 
 import android.app.Fragment;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
 import com.divankits.mvc.annotations.Bind;
 import com.divankits.mvc.annotations.View;
+import com.divankits.mvc.converters.ValueConverter;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
@@ -19,10 +21,8 @@ import java.util.List;
 public class ModelRenderer extends Fragment implements IModelRenderer {
 
     private IOnModelChangedEventListener changeListener;
-
-    private IModel model;
-
-    private  android.view.View mView;
+    private IModel mModel;
+    private android.view.View mView;
 
     public ModelRenderer() {
 
@@ -77,7 +77,7 @@ public class ModelRenderer extends Fragment implements IModelRenderer {
                     public void onClick(android.view.View view) {
 
                         if (changeListener != null)
-                            changeListener.onSubmit(model);
+                            changeListener.onSubmit(getModel());
 
                     }
                 });
@@ -135,7 +135,7 @@ public class ModelRenderer extends Fragment implements IModelRenderer {
 
         }
 
-        for (ModelModifier modifier: modifiers) {
+        for (ModelModifier modifier : modifiers) {
 
             modifier.modify(getModel());
 
@@ -146,14 +146,14 @@ public class ModelRenderer extends Fragment implements IModelRenderer {
     @Override
     public IModel getModel() {
 
-        return this.model;
+        return this.mModel;
 
     }
 
     @Override
     public ModelRenderer setModel(IModel model) {
 
-        this.model = model;
+        this.mModel = model;
 
         return this;
 
@@ -162,46 +162,63 @@ public class ModelRenderer extends Fragment implements IModelRenderer {
     @Override
     public int getSubmitId() throws NullPointerException {
 
-        if (!model.getClass().isAnnotationPresent(View.class))
-            throw new NullPointerException("Submit is not defined in model");
-
-        return model.getClass().getAnnotation(View.class).submit();
+        return getViewAnnotationParams("Submit is not defined in model")
+                .submit();
 
     }
 
     @Override
     public int getViewId() throws NullPointerException {
 
-        if (!model.getClass().isAnnotationPresent(View.class))
-            throw new NullPointerException("Layout is not defined in model");
+        return getViewAnnotationParams("Layout is not defined in model")
+                .value();
 
-        return model.getClass().getAnnotation(View.class).value();
+    }
+
+    private View getViewAnnotationParams(String exMessage)
+            throws NullPointerException {
+
+        if (!getModel().getClass().isAnnotationPresent(View.class))
+            throw new NullPointerException(exMessage);
+
+        return getModel().getClass().getAnnotation(View.class);
 
     }
 
     @Override
-    public android.view.View getView(){
+    public android.view.View getView() {
 
         return mView;
 
     }
 
     @Override
-    public BindDetails getBindDetails(Field field) {
+    public BoundData getBoundData(Field field) {
 
         if (!field.isAnnotationPresent(Bind.class)) return null;
 
-        Bind bind = field.getAnnotation(Bind.class);
+        BoundData details = new BoundData();
 
-        Object elem = getView().findViewById(bind.value());
+        try {
 
-        BindDetails details = new BindDetails();
-        details.Event = bind.event();
-        details.Target = elem.getClass().cast(elem);
-        details.FieldName = field.getName();
-        details.AutoUpdate = bind.autoUpdate();
-        details.Getter = bind.get();
-        details.Setter = bind.set();
+            Bind bind = field.getAnnotation(Bind.class);
+            Object elem = getView().findViewById(bind.value());
+
+            details.Event = bind.event();
+            details.Target = elem.getClass().cast(elem);
+            details.FieldName = field.getName();
+            details.AutoUpdate = bind.autoUpdate();
+            details.Get = bind.get();
+            details.Set = bind.set();
+            details.Converter = bind.converter().getSuperclass() == ValueConverter.class ?
+                    (ValueConverter) bind.converter().newInstance() : null;
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+        }
+
         return details;
 
     }

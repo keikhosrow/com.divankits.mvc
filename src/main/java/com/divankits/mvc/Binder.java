@@ -1,12 +1,13 @@
 package com.divankits.mvc;
 
 
+import android.support.annotation.Nullable;
 import android.view.View;
 
 import com.divankits.mvc.annotations.Bind;
+import com.divankits.mvc.converters.ValueConverter;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 public class Binder {
@@ -22,7 +23,7 @@ public class Binder {
 
             try {
 
-                final BindDetails details = renderer.getBindDetails(field);
+                final BoundData details = renderer.getBoundData(field);
 
                 if (details == null)
                     continue;
@@ -86,10 +87,7 @@ public class Binder {
 
     }
 
-
-    public static void updateValues(IModelRenderer renderer, boolean fromModel)
-            throws NoSuchFieldException, NoSuchMethodException,
-            IllegalAccessException, InvocationTargetException {
+    public static void updateValues(IModelRenderer renderer, boolean fromModel) {
 
         IModel model = renderer.getModel();
 
@@ -97,50 +95,100 @@ public class Binder {
 
         for (Field field : model.getFields()) {
 
-            BindDetails details = renderer.getBindDetails(field);
+            try {
 
-            String name  = field.getName();
+                BoundData data = renderer.getBoundData(field);
 
-            Object value = model.getFieldValue(field.getName());
+                if (data == null || !data.AutoUpdate)
+                    continue;
 
-            if (details == null || !details.AutoUpdate)
-                continue;
+                Class clazz = data.Target.getClass();
 
-            Class clazz = details.Target.getClass();
+                Method method = null;
+                boolean primitivesChecked = false;
+                Class firstClass = null;
 
-            Method method = null;
+                Class type = field.getType();
+                String name = field.getName();
+                Object value = model.getFieldValue(name);
 
-            while (method == null && clazz != null) {
+                if (fromModel && data.Converter instanceof ValueConverter) {
 
-                try {
-
-                    if (fromModel)
-                        method = clazz.getDeclaredMethod(details.Setter, field.getType());
-                    else
-                        method = clazz.getDeclaredMethod(details.Getter);
-
-                } catch (NoSuchMethodException e) {
-
-                    clazz = clazz.getSuperclass();
+                    type = data.Converter.getClass()
+                            .getDeclaredMethod("convertBack", type)
+                            .getReturnType();
 
                 }
 
-            }
+                while (method == null && clazz != null) {
 
-            if (method == null)
+                    try {
+
+                        if (fromModel) {
+
+                            method = clazz.getDeclaredMethod(data.Set, type);
+
+                        } else {
+
+                            method = clazz.getDeclaredMethod(data.Get);
+
+                        }
+
+                    } catch (NoSuchMethodException e) {
+
+                        if (firstClass == null)
+                            firstClass = clazz;
+
+                        clazz = clazz.getSuperclass();
+
+                        if (clazz == null && !primitivesChecked) {
+
+                            primitivesChecked = true;
+
+                            clazz = firstClass;
+
+                            if (hasPrimitiveType(type))
+                                type = getPrimitiveType(type);
+
+                        }
+
+                    }
+
+                }
+
+                if (method == null)
+                    continue;
+
+                if (fromModel) {
+
+                    if (value != null) {
+
+                        if(data.Converter != null)
+                            value = data.Converter.convertBack(value);
+
+                        method.invoke(data.Target, value);
+
+                    }
+
+                } else {
+
+                    Object newValue = method.invoke(data.Target);
+
+                    if(data.Converter != null)
+                        newValue = data.Converter.convert(newValue);
+
+                    model.setFieldValue(name, newValue);
+
+                    if (listener != null && data.Event == Bind.Events.Change)
+                        listener.onFieldChanged(data, value);
+
+                }
+
+            } catch (Exception ex) {
+
+                ex.printStackTrace();
+
                 continue;
-
-            if (fromModel) {
-
-                if (value != null)
-                    method.invoke(details.Target, value);
-
-            } else {
-
-                model.setFieldValue(name, method.invoke(details.Target));
-
-                if (listener != null && details.Event == Bind.Events.Change)
-                    listener.onFieldChanged(details, value);
 
             }
 
@@ -148,6 +196,47 @@ public class Binder {
 
     }
 
+    @Nullable
+    private static Class getPrimitiveType(Class c) {
 
+        switch (c.getSimpleName()) {
+            case "Boolean":
+                return Boolean.TYPE;
+            case "Byte":
+                return Byte.TYPE;
+            case "Character":
+                return Character.TYPE;
+            case "Float":
+                return Float.TYPE;
+            case "Integer":
+                return Integer.TYPE;
+            case "Long":
+                return Long.TYPE;
+            case "Short":
+                return Short.TYPE;
+            case "Double":
+                return Double.TYPE;
+
+        }
+
+        return null;
+    }
+
+    private static boolean hasPrimitiveType(Class c) {
+
+        if (c.equals(Boolean.class) ||
+                c.equals(Byte.class) ||
+                c.equals(Character.class) ||
+                c.equals(Float.class) ||
+                c.equals(Integer.class) ||
+                c.equals(Long.class) ||
+                c.equals(Short.class) ||
+                c.equals(Double.class))
+
+            return true;
+
+        return false;
+
+    }
 
 }

@@ -2,7 +2,6 @@ package com.divankits.mvc.validation.validators;
 
 import android.support.annotation.StringRes;
 
-import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

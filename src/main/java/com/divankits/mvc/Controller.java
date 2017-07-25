@@ -103,7 +103,7 @@ public abstract class Controller implements IController {
                 .setModel(model)
                 .setOnModelChangedEventListener(new IOnModelChangedEventListener() {
                     @Override
-                    public void onFieldChanged(BindDetails details, Object oldValue) {
+                    public void onFieldChanged(BoundData details, Object oldValue) {
 
                         if(mListener != null)
                             mListener.onFieldChanged(details , oldValue);
@@ -114,8 +114,6 @@ public abstract class Controller implements IController {
                     public void onSubmit(IModel model) {
 
                         Controller.this.onSubmit(model);
-
-                        Controller.this.clearStack();
 
                         if(mListener != null)
                             mListener.onSubmit(model);
@@ -252,10 +250,8 @@ public abstract class Controller implements IController {
 
                 try {
 
-
                     if (names.contains(name))
                         continue;
-
 
                     clazz = Class.forName(name);
 
@@ -264,6 +260,7 @@ public abstract class Controller implements IController {
                     Validator object = (Validator) ctor.newInstance(res);
 
                     names.add(name);
+
                     validators.add(new ValidatorClassHandler(object, annotation));
 
                 } catch (Exception e) {

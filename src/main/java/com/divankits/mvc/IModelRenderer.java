@@ -13,7 +13,7 @@ public interface IModelRenderer {
     int getSubmitId();
     View getView();
     IOnModelChangedEventListener getOnModelChangedEventListener();
-    BindDetails getBindDetails(Field field);
+    BoundData getBoundData(Field field);
     IModelRenderer setModel(IModel model);
     IModelRenderer setOnModelChangedEventListener(IOnModelChangedEventListener listener);
 
