@@ -93,6 +93,6 @@ public class MainActivity extends AppCompatActivity {
 
 }
 ```
- For more information visit [Wiki](https://github.com/Rmanaf/com.divankits.mvc/wiki) page
+> For more information visit [Wiki](https://github.com/Rmanaf/com.divankits.mvc/wiki) page
 # License
 > This project is licensed under the terms of the [MIT license](https://github.com/Rmanaf/com.divankits.mvc/blob/master/LICENSE)
