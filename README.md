@@ -45,12 +45,12 @@ public class TestModel extends Model {
 @View(R.layout.test_view)
 public class TestModel extends Model {
 
-    @Bind(value = R.id.title_txt , setter = "setText")
-    public CharSequence Title;
+    @Bind(value = R.id.title_txt , set = "setText" , converter = CharSequenceToStringValueConverter.class)
+    public String Title;
 
     /* For custom components :
     
-    @Bind(value = R.id.title_txt , setter = "name of setter method" , getter = "name of getter method")
+    @Bind(value = R.id.title_txt , set = "method name" , get = "method name" , converter = <ValueConverter>.class)
     public CharSequence Title;
 
     */
@@ -95,4 +95,4 @@ public class MainActivity extends AppCompatActivity {
 ```
  For more information visit [Wiki](https://github.com/Rmanaf/com.divankits.mvc/wiki) page
 # License
-This project is licensed under the terms of the MIT license
+> This project is licensed under the terms of the [MIT license](https://github.com/Rmanaf/com.divankits.mvc/blob/master/LICENSE)
