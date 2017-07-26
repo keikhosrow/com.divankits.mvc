@@ -11,13 +11,12 @@ import java.lang.reflect.Field;
 
 public abstract class Model implements IModel {
 
-
     private String modelId;
 
     @Override
-    public String getModelId(){
+    public String getModelId() {
 
-        if(modelId.equals(null) || modelId.isEmpty()){
+        if (modelId.equals(null) || modelId.isEmpty()) {
             modelId = UniqueModifier.getRandomGuid();
         }
 
@@ -28,14 +27,14 @@ public abstract class Model implements IModel {
     @Override
     public Field getFieldByName(String name) throws NoSuchFieldException {
 
-        return this.getClass().getDeclaredField(name);
+        return this.getClass().getField(name);
 
     }
 
     @Override
     public Field[] getFields() {
 
-        return this.getClass().getDeclaredFields();
+        return this.getClass().getFields();
 
     }
 
@@ -86,7 +85,7 @@ public abstract class Model implements IModel {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
 
         try {
 

@@ -11,5 +11,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface Required {
+    int priority() default 0;
     @StringRes int error() default Integer.MIN_VALUE;
 }

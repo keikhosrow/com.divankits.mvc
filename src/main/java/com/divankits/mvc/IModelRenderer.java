@@ -4,6 +4,7 @@ package com.divankits.mvc;
 import android.view.View;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 
 
 public interface IModelRenderer {
@@ -13,7 +14,7 @@ public interface IModelRenderer {
     int getSubmitId();
     View getView();
     IOnModelChangedEventListener getOnModelChangedEventListener();
-    BoundData getBoundData(Field field);
+    ArrayList<BoundData> getBoundData(Field field);
     IModelRenderer setModel(IModel model);
     IModelRenderer setOnModelChangedEventListener(IOnModelChangedEventListener listener);
 

@@ -19,7 +19,9 @@ public class RequiredValidator extends Validator {
 
     @Override
     public int getErrorCode() {
+
         return 0;
+
     }
 
     @Override

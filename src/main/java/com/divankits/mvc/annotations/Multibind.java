@@ -1,6 +1,4 @@
-package com.divankits.mvc.validation.validators;
-
-import android.support.annotation.StringRes;
+package com.divankits.mvc.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -9,8 +7,6 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
-public @interface MaxLength {
-    int value();
-    int priority() default 0;
-    @StringRes int error() default Integer.MIN_VALUE;
+public @interface Multibind {
+    Bind[] value();
 }

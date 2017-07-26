@@ -39,7 +39,7 @@ public abstract class Controller implements IController {
 
     }
 
-    public void setOnModelChangedEventListener(IOnModelChangedEventListener listener){
+    public void setOnModelChangedEventListener(IOnModelChangedEventListener listener) {
 
 
         this.mListener = listener;
@@ -105,8 +105,8 @@ public abstract class Controller implements IController {
                     @Override
                     public void onFieldChanged(BoundData details, Object oldValue) {
 
-                        if(mListener != null)
-                            mListener.onFieldChanged(details , oldValue);
+                        if (mListener != null)
+                            mListener.onFieldChanged(details, oldValue);
 
                     }
 
@@ -115,7 +115,7 @@ public abstract class Controller implements IController {
 
                         Controller.this.onSubmit(model);
 
-                        if(mListener != null)
+                        if (mListener != null)
                             mListener.onSubmit(model);
 
                     }
@@ -123,7 +123,7 @@ public abstract class Controller implements IController {
                     @Override
                     public void onCreate(View view) {
 
-                        if(mListener != null)
+                        if (mListener != null)
                             mListener.onCreate(view);
 
                     }
@@ -166,7 +166,7 @@ public abstract class Controller implements IController {
 
         IModel model = popStack();
 
-        if(model != null)
+        if (model != null)
             setModel(model, false);
 
         return model != null;

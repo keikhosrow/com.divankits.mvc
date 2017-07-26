@@ -9,12 +9,18 @@ import com.divankits.mvc.IModelRenderer;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 
 public abstract class Validator {
 
-
     private Resources resources;
+    private enum ElementStyle {
+
+        Normal , Invalid
+
+    }
 
     public Validator(Resources resources){
 
@@ -64,9 +70,9 @@ public abstract class Validator {
 
                 A modifier = field.getAnnotation(validator);
 
-                BoundData details = renderer.getBoundData(field);
+                ArrayList<BoundData> details = renderer.getBoundData(field);
 
-                if (details == null || details.Target == null)
+                if (details.isEmpty())
                     continue;
 
                 Object value = model.getFieldValue(field.getName());
@@ -78,16 +84,14 @@ public abstract class Validator {
                     if (error.isEmpty())
                         error = error.concat(getErrorDefaultMessage(field , modifier).toString());
 
-                    result.getErrors().add(new ValidationError(getErrorCode(), error, field.getName()));
+                    result.getErrors().add(new ValidationError(model , field , getErrorCode(),
+                            getPriority(validator , field) , error));
 
-                    if (details.Target instanceof IValidationSupportElement)
-                        ((IValidationSupportElement) details.Target).showInvalidStyle();
+                    setElementsStyle(details , ElementStyle.Invalid);
 
                 } else {
 
-                    if (details.Target instanceof IValidationSupportElement)
-                        ((IValidationSupportElement) details.Target).showNormalStyle();
-
+                    setElementsStyle(details , ElementStyle.Normal);
 
                 }
 
@@ -100,6 +104,53 @@ public abstract class Validator {
         }
 
         return result;
+
+    }
+
+    private void setElementsStyle(ArrayList<BoundData> d , ElementStyle s){
+
+        for (BoundData b:d) {
+
+            if(b.Target == null)
+                continue;
+
+            switch (s){
+
+                case Normal:
+                    if (b.Target instanceof IValidationSupportElement)
+                        ((IValidationSupportElement) b.Target).showNormalStyle();
+                    break;
+                case Invalid:
+                    if (b.Target instanceof IValidationSupportElement)
+                        ((IValidationSupportElement) b.Target).showInvalidStyle();
+                    break;
+
+            }
+
+        }
+
+    }
+
+    public static <A extends Annotation> int getPriority(Class<A> validator , Field field){
+
+        int value = 0;
+
+        if(!field.isAnnotationPresent(validator))
+            return value;
+
+        A modifier = field.getAnnotation(validator);
+
+        try {
+
+            value = (int) modifier.getClass().getMethod("priority").invoke(modifier);
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+        }
+
+        return value;
 
     }
 

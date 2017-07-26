@@ -1,23 +1,55 @@
 package com.divankits.mvc.validation;
 
 
+import com.divankits.mvc.IModel;
+
 import java.lang.reflect.Field;
 
 public class ValidationError {
 
-    public int Error;
+    private int code;
+    private int priority;
+    private String message;
+    private Field field;
+    private IModel model;
 
-    public String Message;
+    public ValidationError(IModel model, Field field, int code, int priority, String message) {
 
-    public String FieldName;
+        this.model = model;
+        this.code = code;
+        this.message = message;
+        this.field = field;
+        this.priority = priority;
 
-    public ValidationError() { }
+    }
 
-    public ValidationError(int error , String message , String field) {
+    public String getMessage() {
 
-        Error = error;
-        Message = message;
-        FieldName = field;
+        return message;
+
+    }
+
+    public int getCode() {
+
+        return code;
+
+    }
+
+    public int getPriority() {
+
+        return priority;
+
+    }
+
+    public IModel getModel() {
+
+        return model;
+
+    }
+
+    public Field getField() {
+
+        return field;
 
     }
 

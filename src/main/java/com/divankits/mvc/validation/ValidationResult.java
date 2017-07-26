@@ -1,6 +1,8 @@
 package com.divankits.mvc.validation;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 
 public class ValidationResult {
 
@@ -27,7 +29,7 @@ public class ValidationResult {
 
         for (ValidationError error : getErrors()) {
 
-            status = status.concat(error.Message + "\n");
+            status = status.concat(error.getMessage() + "\n");
 
         }
 
@@ -35,9 +37,40 @@ public class ValidationResult {
 
     }
 
+    public String first(){
+
+        return getErrors().get(0).getMessage();
+
+    }
+
     public void concat(ValidationResult result){
 
         getErrors().addAll(result.getErrors());
+
+    }
+
+    public ValidationResult sortByPriority() {
+
+        Collections.sort(getErrors(), new Comparator<ValidationError>() {
+            @Override
+            public int compare(ValidationError e1, ValidationError e2)
+            {
+
+                if(e1.getPriority() > e2.getPriority())
+
+                    return -1;
+
+                else if(e1.getPriority() > e2.getPriority())
+
+                    return 1;
+
+                else
+                    return 0;
+
+            }
+        });
+
+        return this;
 
     }
 

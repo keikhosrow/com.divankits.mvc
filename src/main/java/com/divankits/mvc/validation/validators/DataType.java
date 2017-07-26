@@ -11,6 +11,7 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface DataType {
     DataTypes value();
+    int priority() default 0;
     @StringRes int error() default Integer.MIN_VALUE;
 
     enum DataTypes {

@@ -9,8 +9,26 @@ import com.divankits.mvc.converters.ValueConverter;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Binder {
+
+    static final Map<Class, Class> primitives;
+    static {
+
+        primitives =  new HashMap<>();
+        primitives.put(Boolean.class , Boolean.TYPE);
+        primitives.put(Byte.class , Byte.TYPE);
+        primitives.put(Character.class , Character.TYPE);
+        primitives.put(Float.class , Float.TYPE);
+        primitives.put(Integer.class , Integer.TYPE);
+        primitives.put(Long.class , Long.TYPE);
+        primitives.put(Short.class , Short.TYPE);
+        primitives.put(Double.class , Double.TYPE);
+
+    }
 
     public static void bindEvents(final IModelRenderer renderer)
             throws NoSuchFieldException, IllegalAccessException {
@@ -23,58 +41,64 @@ public class Binder {
 
             try {
 
-                final BoundData details = renderer.getBoundData(field);
+                final ArrayList<BoundData> boundList = renderer.getBoundData(field);
 
-                if (details == null)
+                if (boundList.isEmpty())
                     continue;
 
-                switch (details.Event) {
+                for (final BoundData details: boundList) {
 
-                    case None:
-                        continue;
+                    switch (details.Event) {
 
-                    case Click:
+                        case None:
+                            continue;
 
-                        ((View) details.Target).setClickable(true);
+                        case Click:
 
-                        ((View) details.Target).setOnClickListener(new View.OnClickListener() {
-                            @Override
-                            public void onClick(View view) {
+                            ((View) details.Target).setClickable(true);
 
-                                try {
+                            ((View) details.Target).setOnClickListener(new View.OnClickListener() {
+                                @Override
+                                public void onClick(View view) {
 
-                                    Object value = renderer.getModel().getFieldValue(details.FieldName);
+                                    try {
 
-                                    renderer.getOnModelChangedEventListener().onFieldChanged(details, value);
+                                        Object value = renderer.getModel().getFieldValue(details.FieldName);
 
-                                } catch (Exception e) {
+                                        renderer.getOnModelChangedEventListener().onFieldChanged(details, value);
 
-                                    e.printStackTrace();
+                                    } catch (Exception e) {
+
+                                        e.printStackTrace();
+
+                                    }
 
                                 }
+                            });
 
-                            }
-                        });
+                            break;
 
-                        break;
+                        case Focus:
+                        case Blur:
 
-                    case Focus:
-                    case Blur:
+                            ((View) details.Target).setFocusable(true);
 
-                        ((View) details.Target).setFocusable(true);
+                            ((View) details.Target).setOnFocusChangeListener(new View.OnFocusChangeListener() {
+                                @Override
+                                public void onFocusChange(View view, boolean b) {
 
-                        ((View) details.Target).setOnFocusChangeListener(new View.OnFocusChangeListener() {
-                            @Override
-                            public void onFocusChange(View view, boolean b) {
+                                    renderer.getOnModelChangedEventListener().onFieldChanged(details, b);
 
-                                renderer.getOnModelChangedEventListener().onFieldChanged(details, b);
+                                }
+                            });
 
-                            }
-                        });
+                            break;
 
-                        break;
+                    }
 
                 }
+
+
 
             } catch (NullPointerException e) {
 
@@ -97,90 +121,102 @@ public class Binder {
 
             try {
 
-                BoundData data = renderer.getBoundData(field);
+                ArrayList<BoundData> boundList = renderer.getBoundData(field);
 
-                if (data == null || !data.AutoUpdate)
+                if (boundList.isEmpty())
                     continue;
 
-                Class clazz = data.Target.getClass();
+                for (BoundData data:boundList) {
 
-                Method method = null;
-                boolean primitivesChecked = false;
-                Class firstClass = null;
+                    if(!data.AutoUpdate)
+                        continue;
 
-                Class type = field.getType();
-                String name = field.getName();
-                Object value = model.getFieldValue(name);
+                    Class compType , compBaseType , fieldType , fieldPrimitiveType;
 
-                if (fromModel && data.Converter instanceof ValueConverter) {
+                    compType = data.Target.getClass();
+                    compBaseType = null;
+                    fieldType = field.getType();
+                    fieldPrimitiveType = primitives.get(fieldType);
 
-                    type = data.Converter.getClass()
-                            .getDeclaredMethod("convertBack", type)
-                            .getReturnType();
+                    Method method = null;
+                    boolean primitivesChecked = false;
 
-                }
+                    String name = field.getName();
+                    Object value = model.getFieldValue(name);
 
-                while (method == null && clazz != null) {
+                    if (fromModel && data.Converter instanceof ValueConverter) {
 
-                    try {
+                        fieldType = data.Converter.getClass()
+                                .getDeclaredMethod("convertBack", fieldType)
+                                .getReturnType();
 
-                        if (fromModel) {
+                        fieldPrimitiveType = primitives.get(fieldType);
 
-                            method = clazz.getDeclaredMethod(data.Set, type);
+                    }
 
-                        } else {
+                    while (method == null && compType != null) {
 
-                            method = clazz.getDeclaredMethod(data.Get);
+                        try {
 
-                        }
+                            if (fromModel) {
 
-                    } catch (NoSuchMethodException e) {
+                                method = compType.getDeclaredMethod(data.Set, fieldType);
 
-                        if (firstClass == null)
-                            firstClass = clazz;
+                            } else {
 
-                        clazz = clazz.getSuperclass();
+                                method = compType.getDeclaredMethod(data.Get);
 
-                        if (clazz == null && !primitivesChecked) {
+                            }
 
-                            primitivesChecked = true;
+                        } catch (NoSuchMethodException e) {
 
-                            clazz = firstClass;
+                            if (compBaseType == null)
+                                compBaseType = compType;
 
-                            if (hasPrimitiveType(type))
-                                type = getPrimitiveType(type);
+                            compType = compType.getSuperclass();
+
+                            if (compType == null && !primitivesChecked) {
+
+                                primitivesChecked = true;
+
+                                compType = compBaseType;
+
+                                if (fieldPrimitiveType != null)
+                                    fieldType = fieldPrimitiveType;
+
+                            }
 
                         }
 
                     }
 
-                }
+                    if (method == null)
+                        continue;
 
-                if (method == null)
-                    continue;
+                    if (fromModel) {
 
-                if (fromModel) {
+                        if (value != null) {
 
-                    if (value != null) {
+                            if(data.Converter != null)
+                                value = data.Converter.convertBack(value);
+
+                            method.invoke(data.Target, value);
+
+                        }
+
+                    } else {
+
+                        Object newValue = method.invoke(data.Target);
 
                         if(data.Converter != null)
-                            value = data.Converter.convertBack(value);
+                            newValue = data.Converter.convert(newValue);
 
-                        method.invoke(data.Target, value);
+                        model.setFieldValue(name, newValue);
+
+                        if (listener != null && data.Event == Bind.Events.Change)
+                            listener.onFieldChanged(data, value);
 
                     }
-
-                } else {
-
-                    Object newValue = method.invoke(data.Target);
-
-                    if(data.Converter != null)
-                        newValue = data.Converter.convert(newValue);
-
-                    model.setFieldValue(name, newValue);
-
-                    if (listener != null && data.Event == Bind.Events.Change)
-                        listener.onFieldChanged(data, value);
 
                 }
 
@@ -193,49 +229,6 @@ public class Binder {
             }
 
         }
-
-    }
-
-    @Nullable
-    private static Class getPrimitiveType(Class c) {
-
-        switch (c.getSimpleName()) {
-            case "Boolean":
-                return Boolean.TYPE;
-            case "Byte":
-                return Byte.TYPE;
-            case "Character":
-                return Character.TYPE;
-            case "Float":
-                return Float.TYPE;
-            case "Integer":
-                return Integer.TYPE;
-            case "Long":
-                return Long.TYPE;
-            case "Short":
-                return Short.TYPE;
-            case "Double":
-                return Double.TYPE;
-
-        }
-
-        return null;
-    }
-
-    private static boolean hasPrimitiveType(Class c) {
-
-        if (c.equals(Boolean.class) ||
-                c.equals(Byte.class) ||
-                c.equals(Character.class) ||
-                c.equals(Float.class) ||
-                c.equals(Integer.class) ||
-                c.equals(Long.class) ||
-                c.equals(Short.class) ||
-                c.equals(Double.class))
-
-            return true;
-
-        return false;
 
     }
 

@@ -3,11 +3,11 @@ package com.divankits.mvc;
 
 import android.app.Fragment;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
 import com.divankits.mvc.annotations.Bind;
+import com.divankits.mvc.annotations.Multibind;
 import com.divankits.mvc.annotations.View;
 import com.divankits.mvc.converters.ValueConverter;
 
@@ -15,7 +15,10 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 
 public class ModelRenderer extends Fragment implements IModelRenderer {
@@ -27,6 +30,99 @@ public class ModelRenderer extends Fragment implements IModelRenderer {
     public ModelRenderer() {
 
         super();
+
+    }
+
+    private static void modifyModel(IModel model) {
+
+        boolean isCollection = false;
+
+        Field[] fields = model.getFields();
+        List<ModelModifier> modifiers = new ArrayList<>();
+        List<String> names = new ArrayList<>();
+
+        for (Field field : fields) {
+
+            Class type = field.getType();
+
+            // check if field is collection or map
+
+            isCollection = Collection.class.isAssignableFrom(type) ||
+                    Map.class.isAssignableFrom(type);
+
+            if (isCollection) {
+
+                try {
+
+                    Iterator collection = Iterable.class.cast(model.getFieldValue(field.getName()))
+                            .iterator();
+
+                    while (collection.hasNext()) {
+
+                        Object item = collection.next();
+
+                        // apply item modifiers
+
+                        if (item instanceof IModel) {
+
+                            modifyModel((IModel) item);
+
+                        }
+
+                    }
+
+                } catch (Exception e) {
+
+                    e.printStackTrace();
+
+                } finally {
+
+                    continue;
+
+                }
+
+            }
+
+            // for non-collections
+
+            Annotation[] annotations = field.getDeclaredAnnotations();
+
+            for (Annotation annotation : annotations) {
+
+                String name = annotation.annotationType().getName().concat("Modifier");
+
+                Class<?> clazz;
+
+                try {
+
+                    if (names.contains(name))
+                        continue;
+
+                    clazz = Class.forName(name);
+
+                    Constructor<?> ctor = clazz.getConstructor();
+
+                    ModelModifier object = (ModelModifier) ctor.newInstance();
+
+                    names.add(name);
+
+                    modifiers.add(object);
+
+                } catch (Exception e) {
+
+                    continue;
+
+                }
+
+            }
+
+        }
+
+        for (ModelModifier modifier : modifiers) {
+
+            modifier.modify(model);
+
+        }
 
     }
 
@@ -60,11 +156,11 @@ public class ModelRenderer extends Fragment implements IModelRenderer {
 
         try {
 
+            modifyModel(getModel());
+
             Binder.bindEvents(this);
 
             Binder.updateValues(this, true);
-
-            modifyModel();
 
             int submitId = getSubmitId();
 
@@ -87,57 +183,6 @@ public class ModelRenderer extends Fragment implements IModelRenderer {
         } catch (Exception e) {
 
             e.printStackTrace();
-
-        }
-
-    }
-
-    private void modifyModel() {
-
-        Field[] fields = getModel().getFields();
-
-        List<ModelModifier> modifiers = new ArrayList<>();
-
-        List<String> names = new ArrayList<>();
-
-        for (Field field : fields) {
-
-            Annotation[] annotations = field.getDeclaredAnnotations();
-
-            for (Annotation annotation : annotations) {
-
-                String name = annotation.annotationType().getName().concat("Modifier");
-
-                Class<?> clazz = null;
-
-                try {
-
-                    if (names.contains(name))
-                        continue;
-
-                    clazz = Class.forName(name);
-
-                    Constructor<?> ctor = clazz.getConstructor();
-
-                    ModelModifier object = (ModelModifier) ctor.newInstance();
-
-                    names.add(name);
-
-                    modifiers.add(object);
-
-                } catch (Exception e) {
-
-                    continue;
-
-                }
-
-            }
-
-        }
-
-        for (ModelModifier modifier : modifiers) {
-
-            modifier.modify(getModel());
 
         }
 
@@ -193,24 +238,42 @@ public class ModelRenderer extends Fragment implements IModelRenderer {
     }
 
     @Override
-    public BoundData getBoundData(Field field) {
+    public ArrayList<BoundData> getBoundData(Field field) {
 
-        if (!field.isAnnotationPresent(Bind.class)) return null;
+        ArrayList<BoundData> details = new ArrayList<>();
 
-        BoundData details = new BoundData();
+        Bind bind = field.getAnnotation(Bind.class);
+
+        Multibind multibind = field.getAnnotation(Multibind.class);
+
+        if (bind != null)
+            details.add(bindToBoundData(bind, field));
+
+        if (multibind != null)
+            for (Bind b : multibind.value())
+                details.add(bindToBoundData(b, field));
+
+
+        return details;
+
+    }
+
+    private BoundData bindToBoundData(Bind bind, Field field) {
+
+        BoundData b = new BoundData();
 
         try {
 
-            Bind bind = field.getAnnotation(Bind.class);
             Object elem = getView().findViewById(bind.value());
 
-            details.Event = bind.event();
-            details.Target = elem.getClass().cast(elem);
-            details.FieldName = field.getName();
-            details.AutoUpdate = bind.autoUpdate();
-            details.Get = bind.get();
-            details.Set = bind.set();
-            details.Converter = bind.converter().getSuperclass() == ValueConverter.class ?
+            b.Event = bind.event();
+            b.Target = elem.getClass().cast(elem);
+            b.FieldName = field.getName();
+            b.AutoUpdate = bind.autoUpdate();
+            b.Get = bind.get();
+            b.Set = bind.set();
+
+            b.Converter = bind.converter().getSuperclass() == ValueConverter.class ?
                     (ValueConverter) bind.converter().newInstance() : null;
 
         } catch (Exception e) {
@@ -219,7 +282,7 @@ public class ModelRenderer extends Fragment implements IModelRenderer {
 
         }
 
-        return details;
+        return b;
 
     }
 
