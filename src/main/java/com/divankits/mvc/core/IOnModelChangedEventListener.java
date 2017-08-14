@@ -1,7 +1,10 @@
-package com.divankits.mvc;
+package com.divankits.mvc.core;
 
 
 import android.view.View;
+
+import com.divankits.mvc.IModel;
+import com.divankits.mvc.core.BoundData;
 
 public interface IOnModelChangedEventListener {
 

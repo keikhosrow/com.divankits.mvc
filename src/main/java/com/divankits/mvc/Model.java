@@ -1,40 +1,14 @@
 package com.divankits.mvc;
 
-
-import com.divankits.mvc.annotations.Internal;
-import com.divankits.mvc.annotations.modifiers.UniqueModifier;
-
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.lang.reflect.Field;
+import java.util.Map;
 
-public abstract class Model implements IModel {
-
-    private String modelId;
-
-    @Override
-    public String getModelId() {
-
-        if (modelId.equals(null) || modelId.isEmpty()) {
-            modelId = UniqueModifier.getRandomGuid();
-        }
-
-        return modelId;
-
-    }
+public class Model implements IModel {
 
     @Override
     public Field getFieldByName(String name) throws NoSuchFieldException {
 
         return this.getClass().getField(name);
-
-    }
-
-    @Override
-    public Field[] getFields() {
-
-        return this.getClass().getFields();
 
     }
 
@@ -85,35 +59,11 @@ public abstract class Model implements IModel {
     }
 
     @Override
-    public String toString() {
+    public boolean isCollection(Field field) {
 
-        try {
+        Class type = field.getType();
 
-            return toJSONObject().toString();
-
-        } catch (Exception e) {
-
-            return super.toString();
-
-        }
-
-    }
-
-    @Override
-    public JSONObject toJSONObject() throws NoSuchFieldException, IllegalAccessException, JSONException {
-
-        JSONObject obj = new JSONObject();
-
-        for (Field field : getFields()) {
-
-            if (field.isAnnotationPresent(Internal.class))
-                continue;
-
-            obj.put(field.getName(), getFieldValue(field.getName()));
-
-        }
-
-        return obj;
+        return java.util.Collection.class.isAssignableFrom(type) || Map.class.isAssignableFrom(type);
 
     }
 

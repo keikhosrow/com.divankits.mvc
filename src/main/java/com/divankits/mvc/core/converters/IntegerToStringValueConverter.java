@@ -1,7 +1,8 @@
-package com.divankits.mvc.converters;
+package com.divankits.mvc.core.converters;
 
+import com.divankits.mvc.core.ValueConverter;
 
-public class IntegerToStringValueConverter extends ValueConverter<Integer , String>  {
+public class IntegerToStringValueConverter extends ValueConverter<Integer , String> {
 
     @Override
     public String convert(Integer value) {

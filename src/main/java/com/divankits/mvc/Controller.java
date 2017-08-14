@@ -8,7 +8,10 @@ import android.support.annotation.AnimatorRes;
 import android.support.annotation.Nullable;
 import android.view.View;
 
-import com.divankits.mvc.annotations.Submit;
+import com.divankits.mvc.core.BoundData;
+import com.divankits.mvc.core.IModelRenderer;
+import com.divankits.mvc.core.IOnModelChangedEventListener;
+import com.divankits.mvc.core.ModelRenderer;
 import com.divankits.mvc.validation.ValidationResult;
 import com.divankits.mvc.validation.Validator;
 
@@ -20,7 +23,9 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class Controller implements IController {
+public class Controller {
+
+    private static String VALIDATOR_SUFFIX = "Validator";
 
     private IModelRenderer renderer;
     private Activity activity;
@@ -28,22 +33,19 @@ public abstract class Controller implements IController {
     private int[] animations;
     private List<IModel> stack;
     private IOnModelChangedEventListener mListener;
+    private String view;
 
     public Controller(Activity activity, int placeholder) {
 
         this.activity = activity;
-
         this.placeholder = placeholder;
-
         stack = new ArrayList<>();
 
     }
 
     public void setOnModelChangedEventListener(IOnModelChangedEventListener listener) {
 
-
         this.mListener = listener;
-
 
     }
 
@@ -79,6 +81,43 @@ public abstract class Controller implements IController {
 
     }
 
+    public void view(String page) {
+
+        for (Method m : getClass().getDeclaredMethods()) {
+
+            if (!methodHasName(m, page, false))
+                continue;
+
+            try {
+
+                if (!m.isAnnotationPresent(Submit.class)) {
+
+                    view = page;
+
+                    m.invoke(this);
+
+                }
+
+            } catch (Exception e) {
+
+                e.printStackTrace();
+
+                break;
+
+            }
+
+        }
+
+    }
+
+    public void view(String page, IModel model) {
+
+        setModel(model);
+
+        view(page);
+
+    }
+
     public void setModel(IModel model) {
 
         setModel(model, true);
@@ -102,6 +141,7 @@ public abstract class Controller implements IController {
         setRenderer(new ModelRenderer())
                 .setModel(model)
                 .setOnModelChangedEventListener(new IOnModelChangedEventListener() {
+
                     @Override
                     public void onFieldChanged(BoundData details, Object oldValue) {
 
@@ -127,6 +167,7 @@ public abstract class Controller implements IController {
                             mListener.onCreate(view);
 
                     }
+
                 });
 
 
@@ -191,28 +232,41 @@ public abstract class Controller implements IController {
 
         try {
 
-            Binder.updateValues(getRenderer(), false);
+            // updating values of fields
 
-            Method[] methods = this.getClass().getDeclaredMethods();
+            getRenderer().update(false).modify(getRenderer().getModel() , false);
 
-            for (Method method : methods) {
+            // calling associated submit method
 
-                if (!method.isAnnotationPresent(Submit.class))
+            for (Method m : getClass().getDeclaredMethods()) {
+
+                Type[] params = m.getGenericParameterTypes();
+
+                if (!m.isAnnotationPresent(Submit.class) || params.length < 1)
                     continue;
 
-                Class clazz = model.getClass(), paramClass = null;
+                // checking if model has set by view() method
 
-                Type[] params = method.getGenericParameterTypes();
-
-                if (params.length > 0)
-                    paramClass = (Class) params[0];
-
-                if (paramClass == null)
+                if (view != null && !methodHasName(m, view, false))
                     continue;
 
-                if (model.getClass() == clazz && paramClass == clazz) {
+                try {
 
-                    method.invoke(this, model);
+                    Class clazz = model.getClass(), paramClass = (Class) params[0];
+
+                    if (model.getClass() == clazz && paramClass == clazz) {
+
+                        m.invoke(this, model);
+
+                        view = null;
+
+                        return;
+
+                    }
+
+                } catch (Exception e) {
+
+                    e.printStackTrace();
 
                     break;
 
@@ -228,23 +282,28 @@ public abstract class Controller implements IController {
 
     }
 
+    private boolean methodHasName(Method method, String name, boolean matchCase) {
+
+        return matchCase ? method.getName().equals(name) :
+                method.getName().toLowerCase().equals(name.toLowerCase());
+
+    }
+
     public ValidationResult getModelState() {
 
         Resources res = getActivity().getResources();
-
-        Field[] fields = getRenderer().getModel().getFields();
 
         List<ValidatorClassHandler> validators = new ArrayList<>();
 
         List<String> names = new ArrayList<>();
 
-        for (Field field : fields) {
+        for (Field field : getRenderer().getModel().getClass().getFields()) {
 
             Annotation[] annotations = field.getDeclaredAnnotations();
 
             for (Annotation annotation : annotations) {
 
-                String name = annotation.annotationType().getName().concat("Validator");
+                String name = annotation.annotationType().getName().concat(VALIDATOR_SUFFIX);
 
                 Class<?> clazz = null;
 
@@ -283,7 +342,8 @@ public abstract class Controller implements IController {
 
         for (ValidatorClassHandler handler : handlers) {
 
-            result.concat(handler.validator.validate(handler.annotation.annotationType(), getRenderer()));
+            result.concat(handler.validator.validate(handler.annotation.annotationType(),
+                    getRenderer()));
 
         }
 

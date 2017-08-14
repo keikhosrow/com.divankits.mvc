@@ -1,8 +1,7 @@
-package com.divankits.mvc;
+package com.divankits.mvc.core;
 
 
-import com.divankits.mvc.annotations.Bind.Events;
-import com.divankits.mvc.converters.ValueConverter;
+import com.divankits.mvc.Bind.Events;
 
 public class BoundData {
 

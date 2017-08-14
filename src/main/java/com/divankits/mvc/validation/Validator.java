@@ -3,13 +3,12 @@ package com.divankits.mvc.validation;
 
 import android.content.res.Resources;
 
-import com.divankits.mvc.BoundData;
+import com.divankits.mvc.core.BoundData;
 import com.divankits.mvc.IModel;
-import com.divankits.mvc.IModelRenderer;
+import com.divankits.mvc.core.IModelRenderer;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 
@@ -61,9 +60,7 @@ public abstract class Validator {
 
             IModel model = renderer.getModel();
 
-            Field[] fields = model.getFields();
-
-            for (Field field : fields) {
+            for (Field field : model.getClass().getFields()) {
 
                 if (!field.isAnnotationPresent(validator))
                     continue;

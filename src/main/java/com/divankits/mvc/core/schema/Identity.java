@@ -1,4 +1,4 @@
-package com.divankits.mvc.annotations.modifiers;
+package com.divankits.mvc.core.schema;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -8,13 +8,13 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
-public @interface Unique {
+public @interface Identity {
 
-    GenerateType value() default GenerateType.Number;
+    GenerateType value() default GenerateType.Indexing;
 
     enum GenerateType {
 
-        Number , Guid
+        RandomNumber, Guid , Indexing
 
     }
 

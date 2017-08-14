@@ -74,15 +74,5 @@ public class ValidationResult {
 
     }
 
-    /**
-     * @deprecated
-     * Use toString() instead
-     */
-    @Deprecated
-    public String trace() {
-
-        return toString();
-
-    }
 
 }
