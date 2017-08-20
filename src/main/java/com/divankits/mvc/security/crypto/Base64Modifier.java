@@ -1,36 +1,32 @@
 package com.divankits.mvc.security.crypto;
 
-import com.divankits.mvc.IModel;
 import com.divankits.mvc.core.ModelModifier;
+import com.divankits.mvc.generic.PropertyInfo;
 import com.divankits.mvc.net.Serializer;
 
-import java.lang.reflect.Field;
-
-
 public class Base64Modifier extends ModelModifier<Base64> {
-
 
     public Base64Modifier(Base64 modifier) {
         super(modifier);
     }
 
     @Override
-    public Object modify(IModel model, Field field) {
+    public Object modify(PropertyInfo property) {
 
         Object value = null;
 
         try {
 
-            value = model.getFieldValue(field.getName());
+            value = property.getValue();
 
-            if(value == null)
+            if (value == null)
                 return value;
 
             int flag = getModifier().value();
 
             Base64.Type type = getModifier().type();
 
-            switch (type){
+            switch (type) {
 
                 case String:
 
@@ -57,22 +53,22 @@ public class Base64Modifier extends ModelModifier<Base64> {
     }
 
     @Override
-    public Object restore(IModel model, Field field) {
+    public Object restore(PropertyInfo property) {
 
         Object value = null;
 
         try {
 
-            value = model.getFieldValue(field.getName());
+            value = property.getValue();
 
-            if(value == null)
+            if (value == null)
                 return value;
 
             int flag = getModifier().value();
 
             Base64.Type type = getModifier().type();
 
-            switch (type){
+            switch (type) {
 
                 case String:
 

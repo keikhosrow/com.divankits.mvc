@@ -2,17 +2,27 @@ package com.divankits.mvc.core;
 
 
 import android.app.Fragment;
+import android.content.Context;
+import android.content.res.Resources;
 import android.os.Bundle;
+import android.support.annotation.IdRes;
+import android.support.annotation.LayoutRes;
+import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 
-import com.divankits.mvc.Bind;
 import com.divankits.mvc.IModel;
-import com.divankits.mvc.Multibind;
-import com.divankits.mvc.View;
+import com.divankits.mvc.forms.Bind;
+import com.divankits.mvc.forms.ItemView;
+import com.divankits.mvc.forms.View;
+import com.divankits.mvc.generic.PropertyInfo;
+import com.divankits.mvc.validation.ValidationResult;
+import com.divankits.mvc.validation.Validator;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,13 +31,15 @@ import java.util.List;
 import java.util.Map;
 
 
-public class ModelRenderer extends Fragment implements IModelRenderer {
-
+public class ModelRenderer extends Fragment {
 
     private static final Map<Class, Class> primitives;
-    private static String MODIFIERS_SUFFIX = "Modifier";
-    private static String ERR_001 = "Submit is not defined in model";
-    private static String ERR_002 = "Layout is not defined in model";
+    private static final String MODIFIERS_SUFFIX = "Modifier";
+    private static final String VALIDATOR_SUFFIX = "Validator";
+    private static final String CONVERTER_CONVERT_BACK = "convertBack";
+    private static final String ERR_001 = "Submit is not defined in model";
+    private static final String ERR_002 = "Layout is not defined in model";
+    private static final String ERR_003 = "No View Bounds to Collection";
 
     static {
 
@@ -46,27 +58,36 @@ public class ModelRenderer extends Fragment implements IModelRenderer {
     private IOnModelChangedEventListener changeListener;
     private IModel mModel;
     private android.view.View mView;
+    private Context mContext;
+    private int mLayoutId;
+    private int mSubmitId;
 
     public ModelRenderer() {
+
         super();
+
     }
 
-    public void bindEvents()
-            throws NoSuchFieldException, IllegalAccessException {
+    public void bindEvents() throws NoSuchFieldException, IllegalAccessException  {
 
         if (getOnModelChangedEventListener() == null)
             return;
 
-        for (Field field : getModel().getClass().getFields()) {
+        for (PropertyInfo field : getModel().getProperties()) {
 
             try {
 
-                final ArrayList<BoundData> boundList = getBoundData(field);
+                ArrayList<BoundData> boundList = field.getBoundData();
 
                 if (boundList.isEmpty())
                     continue;
 
                 for (final BoundData details : boundList) {
+
+                    android.view.View v = getView().findViewById(details.Target);
+
+                    if (v == null)
+                        break;
 
                     switch (details.Event) {
 
@@ -75,9 +96,9 @@ public class ModelRenderer extends Fragment implements IModelRenderer {
 
                         case Click:
 
-                            ((android.view.View) details.Target).setClickable(true);
+                            v.setClickable(true);
 
-                            ((android.view.View) details.Target).setOnClickListener(new android.view.View.OnClickListener() {
+                            v.setOnClickListener(new android.view.View.OnClickListener() {
                                 @Override
                                 public void onClick(android.view.View view) {
 
@@ -101,9 +122,9 @@ public class ModelRenderer extends Fragment implements IModelRenderer {
                         case Focus:
                         case Blur:
 
-                            ((android.view.View) details.Target).setFocusable(true);
+                            v.setFocusable(true);
 
-                            ((android.view.View) details.Target).setOnFocusChangeListener(new android.view.View.OnFocusChangeListener() {
+                            v.setOnFocusChangeListener(new android.view.View.OnFocusChangeListener() {
                                 @Override
                                 public void onFocusChange(android.view.View view, boolean b) {
 
@@ -123,98 +144,68 @@ public class ModelRenderer extends Fragment implements IModelRenderer {
 
                 e.printStackTrace();
 
-                continue;
-
             }
+
         }
 
     }
 
-    @Override
-    public IModelRenderer update(boolean fromModel) {
+    public ModelRenderer update(final boolean fromModel) {
+
+        return update(getModel(), fromModel);
+
+    }
+
+    public ModelRenderer update(IModel model, final boolean fromModel) {
 
         IOnModelChangedEventListener listener = getOnModelChangedEventListener();
 
-        for (Field field : getModel().getClass().getFields()) {
+        for (PropertyInfo prop : getModel().getProperties()) {
 
             try {
 
-                ArrayList<BoundData> boundList = getBoundData(field);
+                ArrayList<BoundData> boundList = prop.getBoundData();
 
                 if (boundList.isEmpty())
                     continue;
 
                 for (BoundData data : boundList) {
 
-                    if (!data.AutoUpdate || data.Target == null)
+                    android.view.View view = getView().findViewById(data.Target);
+
+                    if (!data.AutoUpdate || view == null)
                         continue;
 
-                    Class compType, compBaseType, fieldType, fieldPrimitiveType;
+                    Object value = prop.getValue();
 
-                    compType = data.Target.getClass();
+                    // creates adapter and custom view for collections
 
-                    compBaseType = null;
+                    if (prop.isCollection()) {
 
-                    fieldType = field.getType();
+                        if (view instanceof AdapterView && prop.isAnnotationPresent(ItemView.class)) {
 
-                    fieldPrimitiveType = primitives.get(fieldType);
+                            AdapterView target = (AdapterView) view;
 
-                    Method method = null;
+                            if (target.getAdapter() == null) {
 
-                    boolean primitivesChecked = false;
+                                target.setAdapter(createCollectionAdapter(target, prop));
 
-                    String name = field.getName();
-
-                    Object value = getModel().getFieldValue(name);
-
-                    if (fromModel && data.Converter instanceof ValueConverter) {
-
-                        fieldType = data.Converter.getClass()
-                                .getDeclaredMethod("convertBack", fieldType)
-                                .getReturnType();
-
-                        fieldPrimitiveType = primitives.get(fieldType);
-
-                    }
-
-                    while (method == null && compType != null) {
-
-                        try {
-
-                            if (fromModel) {
-
-                                method = compType.getDeclaredMethod(data.Set, fieldType);
-
-                            } else {
-
-                                method = compType.getDeclaredMethod(data.Get);
+                                target.setOnItemClickListener(createCollectionItemClickListener());
 
                             }
 
-                        } catch (NoSuchMethodException e) {
-
-                            if (compBaseType == null)
-                                compBaseType = compType;
-
-                            compType = compType.getSuperclass();
-
-                            if (compType == null && !primitivesChecked) {
-
-                                primitivesChecked = true;
-
-                                compType = compBaseType;
-
-                                if (fieldPrimitiveType != null)
-                                    fieldType = fieldPrimitiveType;
-
-                            }
+                            continue;
 
                         }
 
                     }
 
+                    Method method = findMethod(prop, data, fromModel);
+
+
                     if (method == null)
                         continue;
+
 
                     if (fromModel) {
 
@@ -223,18 +214,18 @@ public class ModelRenderer extends Fragment implements IModelRenderer {
                             if (data.Converter != null)
                                 value = data.Converter.convertBack(value);
 
-                            method.invoke(data.Target, value);
+                            method.invoke(view, value);
 
                         }
 
                     } else {
 
-                        Object newValue = method.invoke(data.Target);
+                        Object newValue = method.invoke(view);
 
                         if (data.Converter != null)
                             newValue = data.Converter.convert(newValue);
 
-                        getModel().setFieldValue(name, newValue);
+                        getModel().setFieldValue(prop.getName(), newValue);
 
                         if (listener != null && data.Event == Bind.Events.Change)
                             listener.onFieldChanged(data, value);
@@ -263,7 +254,7 @@ public class ModelRenderer extends Fragment implements IModelRenderer {
 
         try {
 
-            mView = inflater.inflate(getViewId(), container, false);
+            mView = inflater.inflate(getLayoutId(), container, false);
 
             if (changeListener != null)
                 changeListener.onCreate(mView);
@@ -303,6 +294,11 @@ public class ModelRenderer extends Fragment implements IModelRenderer {
                     @Override
                     public void onClick(android.view.View view) {
 
+                        // updating values of fields
+
+                        ModelRenderer.this.update(false)
+                                .modify(ModelRenderer.this.getModel() , false);
+
                         if (changeListener != null)
                             changeListener.onSubmit(getModel());
 
@@ -320,110 +316,76 @@ public class ModelRenderer extends Fragment implements IModelRenderer {
     }
 
     @Override
-    public IModel getModel() {
-
-        return this.mModel;
-
-    }
-
-    @Override
-    public ModelRenderer setModel(IModel model) {
-
-        this.mModel = model;
-
-        if (this.mModel != null)
-            modify(this.mModel, false);
-
-        return this;
-
-    }
-
-    @Override
-    public int getSubmitId() throws NullPointerException {
-
-        return getViewAnnotationParams(ERR_001).submit();
-
-    }
-
-    @Override
-    public int getViewId() throws NullPointerException {
-
-        return getViewAnnotationParams(ERR_002).value();
-
-    }
-
-    private View getViewAnnotationParams(String exMessage)
-            throws NullPointerException {
-
-        if (!getModel().getClass().isAnnotationPresent(View.class))
-            throw new NullPointerException(exMessage);
-
-        return getModel().getClass().getAnnotation(View.class);
-
-    }
-
-    @Override
     public android.view.View getView() {
 
         return mView;
 
     }
 
-    @Override
-    public ArrayList<BoundData> getBoundData(Field field) {
+    public IModel getModel() {
 
-        ArrayList<BoundData> details = new ArrayList<>();
-
-        Bind bind = field.getAnnotation(Bind.class);
-
-        Multibind multibind = field.getAnnotation(Multibind.class);
-
-        if (bind != null)
-            details.add(bindToBoundData(bind, field));
-
-        if (multibind != null)
-            for (Bind b : multibind.value())
-                details.add(bindToBoundData(b, field));
-
-
-        return details;
+        return this.mModel;
 
     }
 
-    private BoundData bindToBoundData(Bind bind, Field field) {
+    public ModelRenderer setModel(IModel model) {
 
-        BoundData b = new BoundData();
+        return setModel(model , -1);
+
+    }
+
+    public ModelRenderer setModel(IModel model , @LayoutRes int layoutId) {
+
+        return setModel(model , layoutId , -1);
+
+    }
+
+    public ModelRenderer setModel(IModel model , @LayoutRes int layoutId , @IdRes int submitId) {
+
+        this.mModel = model;
+        this.mLayoutId = layoutId;
+        this.mSubmitId = submitId;
+
+        modify(this.mModel, false);
+
+        return this;
+
+    }
+
+    public int getSubmitId() throws NullPointerException {
 
         try {
 
-            b.Event = bind.event();
-            b.Target = getView().findViewById(bind.value());
-            b.FieldName = field.getName();
-            b.AutoUpdate = bind.autoUpdate();
-            b.Get = bind.get();
-            b.Set = bind.set();
+            return getViewAnnotationParams(ERR_001).submit();
 
-            b.Converter = bind.converter().getSuperclass() == ValueConverter.class ?
-                    (ValueConverter) bind.converter().newInstance() : null;
+        }catch (Exception e){
 
-        } catch (Exception e) {
-
-            e.printStackTrace();
+            return mSubmitId;
 
         }
 
-        return b;
+    }
+
+    public int getLayoutId() throws NullPointerException {
+
+        try {
+
+            return getViewAnnotationParams(ERR_002).value();
+
+        }catch (Exception e){
+
+            return mLayoutId;
+
+        }
 
     }
 
-    @Override
     public IOnModelChangedEventListener getOnModelChangedEventListener() {
 
         return this.changeListener;
 
     }
 
-    @Override
     public ModelRenderer setOnModelChangedEventListener(IOnModelChangedEventListener listener) {
 
         this.changeListener = listener;
@@ -432,20 +394,19 @@ public class ModelRenderer extends Fragment implements IModelRenderer {
 
     }
 
-    public IModelRenderer modify(IModel model, boolean restore) {
+    public ModelRenderer modify(IModel model, boolean restore) {
 
         List<ModifierHandler> modifiers = new ArrayList<>();
-        List<String> names = new ArrayList<>();
 
-        for (Field field : model.getClass().getFields()) {
+        for (PropertyInfo prop : model.getProperties()) {
 
             // check if field is collection or map
 
-            if (model.isCollection(field)) {
+            if (prop.isCollection()) {
 
                 try {
 
-                    Object value = model.getFieldValue(field.getName());
+                    Object value = prop.getValue();
 
                     if (value == null)
                         continue;
@@ -480,7 +441,7 @@ public class ModelRenderer extends Fragment implements IModelRenderer {
 
             // for non-collections
 
-            Annotation[] annotations = field.getDeclaredAnnotations();
+            Annotation[] annotations = prop.getDeclaredAnnotations();
 
             for (Annotation a : annotations) {
 
@@ -493,7 +454,7 @@ public class ModelRenderer extends Fragment implements IModelRenderer {
                     ModelModifier object = (ModelModifier) clazz.getConstructor(a.annotationType())
                             .newInstance(a);
 
-                    modifiers.add(new ModifierHandler(model , field , object));
+                    modifiers.add(new ModifierHandler(prop, object));
 
                 } catch (Exception e) {
 
@@ -506,27 +467,270 @@ public class ModelRenderer extends Fragment implements IModelRenderer {
         }
 
         for (ModifierHandler m : modifiers)
-            m.modifier.invoke(m.model, m.field, restore);
+            m.modifier.invoke(m.property, restore);
 
         return this;
 
     }
 
+    public void setContext(Context context) {
 
-    class ModifierHandler {
+        mContext = context;
 
-        Field field;
-        IModel model;
-        ModelModifier modifier;
+    }
 
-        public ModifierHandler(IModel model , Field field , ModelModifier modifier){
+    private View getViewAnnotationParams(String exMessage)
+            throws NullPointerException {
 
-            this.field = field;
-            this.model = model;
+        if (!getModel().getClass().isAnnotationPresent(View.class))
+            throw new NullPointerException(exMessage);
+
+        return getModel().getClass().getAnnotation(View.class);
+
+    }
+
+    private ArrayAdapter<IModel> createCollectionAdapter(AdapterView view, PropertyInfo prop)
+            throws NoSuchFieldException, IllegalAccessException, NullPointerException {
+
+        final ItemView iw = prop.getAnnotation(ItemView.class);
+
+        if (iw == null)
+            throw new NullPointerException(ERR_003);
+
+        return new ArrayAdapter<IModel>(mContext, getViewAnnotationParams(ERR_003).value(),
+                (List<IModel>) getModel().getFieldValue(prop.getName())) {
+
+            @Override
+            public android.view.View getView(int position, android.view.View convertView, ViewGroup parent) {
+
+
+                android.view.View v = convertView;
+
+                if (v == null)
+                    v = LayoutInflater.from(getContext()).inflate(iw.value(), null);
+
+                IModel p = getItem(position);
+
+                if (p == null)
+                    return v;
+
+                for (PropertyInfo prop : p.getProperties()) {
+
+                    try {
+
+                        ArrayList<BoundData> dt = prop.getBoundData();
+
+                        Object value = prop.getValue();
+
+                        for (BoundData b : dt) {
+
+                                Method m = findMethod(v ,prop, b, true);
+
+                                if (value != null && m != null) {
+
+                                    android.view.View target = v.findViewById(b.Target);
+
+                                    if (b.Converter != null)
+                                        value = b.Converter.convertBack(value);
+
+                                    m.invoke( target , value);
+
+                                }
+
+                        }
+
+                    } catch (Exception e) {
+
+                        continue;
+
+                    }
+
+                }
+
+                return v;
+
+            }
+
+
+        };
+    }
+
+    private AdapterView.OnItemClickListener createCollectionItemClickListener() {
+
+        return new AdapterView.OnItemClickListener() {
+
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, android.view.View view, int i, long l) {
+
+                if (changeListener != null)
+                    changeListener.onCollectionItemSelected(mModel , adapterView.getAdapter().getItem(i));
+
+            }
+
+        };
+
+    }
+
+    @Nullable
+    private Method findMethod(PropertyInfo property, BoundData data, boolean setter)
+            throws NoSuchMethodException {
+
+        return findMethod(getView(), property, data, setter);
+
+    }
+
+    @Nullable
+    private Method findMethod(android.view.View view, PropertyInfo property, BoundData data, boolean setter)
+            throws NoSuchMethodException , NullPointerException {
+
+        Class compType, fieldType, fieldPrimitiveType;
+
+        compType = view.findViewById(data.Target).getClass();
+        fieldType = property.getType();
+        fieldPrimitiveType = primitives.get(fieldType);
+
+        Method method = null;
+
+        boolean primitivesChecked = false;
+
+        if (setter && data.Converter instanceof ValueConverter) {
+
+            fieldType = data.Converter.getClass()
+                    .getDeclaredMethod(CONVERTER_CONVERT_BACK, fieldType)
+                    .getReturnType();
+
+            fieldPrimitiveType = primitives.get(fieldType);
+
+        }
+
+        while (method == null) {
+
+            try {
+
+                if (setter) {
+
+                    method = compType.getMethod(data.Set, fieldType);
+
+                } else {
+
+                    method = compType.getMethod(data.Get);
+
+                }
+
+
+            } catch (NoSuchMethodException e) {
+
+                if (!primitivesChecked) {
+
+                    primitivesChecked = true;
+
+                    if (fieldPrimitiveType != null)
+                        fieldType = fieldPrimitiveType;
+
+                } else {
+
+                    break;
+
+                }
+
+            }
+
+        }
+
+        return method;
+
+    }
+
+    public ValidationResult getModelState() {
+
+        Resources res = getActivity().getResources();
+
+        List<ValidatorClassHandler> validators = new ArrayList<>();
+
+        List<String> names = new ArrayList<>();
+
+        for (PropertyInfo field : getModel().getProperties()) {
+
+            Annotation[] annotations = field.getDeclaredAnnotations();
+
+            for (Annotation annotation : annotations) {
+
+                String name = annotation.annotationType().getName().concat(VALIDATOR_SUFFIX);
+
+                Class<?> clazz;
+
+                try {
+
+                    if (names.contains(name))
+                        continue;
+
+                    clazz = Class.forName(name);
+
+                    Constructor<?> ctor = clazz.getConstructor(Resources.class);
+
+                    Validator object = (Validator) ctor.newInstance(res);
+
+                    names.add(name);
+
+                    validators.add(new ValidatorClassHandler(object, annotation));
+
+                } catch (Exception e) {
+
+                    // ignore all exceptions
+
+                }
+
+            }
+
+        }
+
+        return validate(validators.toArray(new ValidatorClassHandler[validators.size()]));
+
+    }
+
+    private ValidationResult validate(ValidatorClassHandler... handlers) {
+
+        ValidationResult result = new ValidationResult();
+
+        for (ValidatorClassHandler handler : handlers) {
+
+            result.concat(handler.validator.validate(handler.annotation.annotationType(), this));
+
+        }
+
+        return result;
+
+    }
+
+    private class ValidatorClassHandler {
+
+        private Validator validator;
+
+        private Annotation annotation;
+
+        public ValidatorClassHandler(Validator validator, Annotation annotation) {
+
+            this.validator = validator;
+            this.annotation = annotation;
+
+        }
+
+    }
+
+    private class ModifierHandler {
+
+        private PropertyInfo property;
+        private ModelModifier modifier;
+
+        public ModifierHandler(PropertyInfo property, ModelModifier modifier) {
+
+            this.property = property;
             this.modifier = modifier;
 
         }
 
     }
+
+
 
 }

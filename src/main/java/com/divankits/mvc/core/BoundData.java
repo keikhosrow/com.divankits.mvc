@@ -1,11 +1,14 @@
 package com.divankits.mvc.core;
 
 
-import com.divankits.mvc.Bind.Events;
+import android.support.annotation.IdRes;
+
+import com.divankits.mvc.forms.Bind.Events;
 
 public class BoundData {
 
-    public Object Target;
+    @IdRes
+    public int Target = Integer.MIN_VALUE;
     public String FieldName;
     public String Get;
     public String Set;

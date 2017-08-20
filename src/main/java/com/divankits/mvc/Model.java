@@ -1,69 +1,30 @@
 package com.divankits.mvc;
 
+import com.divankits.mvc.generic.PropertyInfo;
+
 import java.lang.reflect.Field;
-import java.util.Map;
+import java.util.ArrayList;
 
 public class Model implements IModel {
 
     @Override
-    public Field getFieldByName(String name) throws NoSuchFieldException {
+    public PropertyInfo getProperty(String name) throws NoSuchFieldException {
 
-        return this.getClass().getField(name);
+        return new PropertyInfo(this , this.getClass().getField(name));
 
     }
 
     @Override
     public Object getFieldValue(String field) throws NoSuchFieldException, IllegalAccessException {
 
-        Field f = getFieldByName(field);
-
-        Object data;
-
-        if (f.isAccessible()) {
-
-            data = f.get(this);
-
-        } else {
-
-            f.setAccessible(true);
-
-            data = f.get(this);
-
-            f.setAccessible(false);
-
-        }
-
-        return data;
+        return getProperty(field).getValue();
 
     }
 
     @Override
     public void setFieldValue(String field, Object value) throws NoSuchFieldException, IllegalAccessException {
 
-        Field f = getFieldByName(field);
-
-        if (f.isAccessible()) {
-
-            f.set(this, value);
-
-        } else {
-
-            f.setAccessible(true);
-
-            f.set(this, value);
-
-            f.setAccessible(false);
-
-        }
-
-    }
-
-    @Override
-    public boolean isCollection(Field field) {
-
-        Class type = field.getType();
-
-        return java.util.Collection.class.isAssignableFrom(type) || Map.class.isAssignableFrom(type);
+        getProperty(field).setValue(value);
 
     }
 
@@ -71,6 +32,21 @@ public class Model implements IModel {
     public String getName() {
 
         return getClass().getSimpleName();
+
+    }
+
+    @Override
+    public PropertyInfo[] getProperties() {
+
+        ArrayList<PropertyInfo> props = new ArrayList<>();
+
+        for (Field f : getClass().getFields()) {
+
+            props.add(new PropertyInfo(this , f));
+
+        }
+
+        return props.toArray(new PropertyInfo[props.size()]);
 
     }
 

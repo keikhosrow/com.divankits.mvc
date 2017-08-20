@@ -1,9 +1,8 @@
 package com.divankits.mvc.core;
 
-import com.divankits.mvc.IModel;
+import com.divankits.mvc.generic.PropertyInfo;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
 
 public abstract class ModelModifier<T extends Annotation> {
 
@@ -19,26 +18,24 @@ public abstract class ModelModifier<T extends Annotation> {
 
     }
 
-    public void invoke(IModel model, Field field, boolean restore) {
+    public void invoke(PropertyInfo property, boolean restore) {
 
         try {
 
             if (this.getClass().isAnnotationPresent(ModifyOnce.class)) {
 
-                Object value = model.getFieldValue(field.getName());
+                Object value = property.getValue();
 
                 if (value != null)
                     return;
 
-                model.setFieldValue(field.getName(), modify(model, field));
+                property.setValue(modify(property));
 
                 return;
 
             }
 
-            model.setFieldValue(field.getName(),
-                    restore ? restore(model, field) : modify(model, field));
-
+            property.setValue(restore ? restore(property) : modify(property));
 
         } catch (Exception e) {
 
@@ -48,8 +45,8 @@ public abstract class ModelModifier<T extends Annotation> {
 
     }
 
-    public abstract Object modify(IModel model, Field field);
+    public abstract Object modify(PropertyInfo property);
 
-    public abstract Object restore(IModel model, Field field);
+    public abstract Object restore(PropertyInfo property);
 
 }

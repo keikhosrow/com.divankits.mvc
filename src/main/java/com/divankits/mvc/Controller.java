@@ -3,21 +3,17 @@ package com.divankits.mvc;
 import android.app.Activity;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
-import android.content.res.Resources;
 import android.support.annotation.AnimatorRes;
+import android.support.annotation.IdRes;
+import android.support.annotation.LayoutRes;
 import android.support.annotation.Nullable;
 import android.view.View;
 
 import com.divankits.mvc.core.BoundData;
-import com.divankits.mvc.core.IModelRenderer;
 import com.divankits.mvc.core.IOnModelChangedEventListener;
 import com.divankits.mvc.core.ModelRenderer;
-import com.divankits.mvc.validation.ValidationResult;
-import com.divankits.mvc.validation.Validator;
+import com.divankits.mvc.forms.Submit;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -25,9 +21,7 @@ import java.util.List;
 
 public class Controller {
 
-    private static String VALIDATOR_SUFFIX = "Validator";
-
-    private IModelRenderer renderer;
+    private ModelRenderer renderer;
     private Activity activity;
     private int placeholder;
     private int[] animations;
@@ -49,15 +43,17 @@ public class Controller {
 
     }
 
-    public IModelRenderer getRenderer() {
+    public ModelRenderer getRenderer() {
 
         return renderer;
 
     }
 
-    public IModelRenderer setRenderer(IModelRenderer renderer) {
+    public ModelRenderer setRenderer(ModelRenderer renderer) {
 
         this.renderer = renderer;
+
+        this.renderer.setContext(getActivity());
 
         return this.renderer;
 
@@ -118,13 +114,43 @@ public class Controller {
 
     }
 
+    public void view(IModel model) {
+
+        setModel(model);
+
+    }
+
     public void setModel(IModel model) {
 
-        setModel(model, true);
+        setModel(model, -1 , true);
+
+    }
+
+    public void setModel(IModel model, @LayoutRes int layoutId ){
+
+        setModel(model, layoutId , true);
 
     }
 
     public void setModel(IModel model, boolean addToStack) {
+
+        setModel(model,  -1 ,  addToStack);
+
+    }
+
+    public void setModel(IModel model, @LayoutRes int layoutId , boolean addToStack){
+
+        setModel(model , layoutId , -1 , addToStack);
+
+    }
+
+    public void setModel(IModel model, @LayoutRes int layoutId , @IdRes int submitId){
+
+        setModel(model , layoutId , submitId , true);
+
+    }
+
+    public void setModel(IModel model, @LayoutRes int layoutId , @IdRes int submitId , boolean addToStack){
 
         FragmentTransaction ft = getFragmentManager().beginTransaction();
 
@@ -139,7 +165,7 @@ public class Controller {
             addToStack();
 
         setRenderer(new ModelRenderer())
-                .setModel(model)
+                .setModel(model, layoutId , submitId)
                 .setOnModelChangedEventListener(new IOnModelChangedEventListener() {
 
                     @Override
@@ -168,10 +194,18 @@ public class Controller {
 
                     }
 
+                    @Override
+                    public void onCollectionItemSelected(IModel model , Object item) {
+
+                        if(mListener != null)
+                            mListener.onCollectionItemSelected(model , item);
+
+                    }
+
                 });
 
 
-        ft.replace(placeholder, (ModelRenderer) getRenderer()).commit();
+        ft.replace(placeholder, getRenderer()).commit();
 
     }
 
@@ -232,10 +266,6 @@ public class Controller {
 
         try {
 
-            // updating values of fields
-
-            getRenderer().update(false).modify(getRenderer().getModel() , false);
-
             // calling associated submit method
 
             for (Method m : getClass().getDeclaredMethods()) {
@@ -286,83 +316,6 @@ public class Controller {
 
         return matchCase ? method.getName().equals(name) :
                 method.getName().toLowerCase().equals(name.toLowerCase());
-
-    }
-
-    public ValidationResult getModelState() {
-
-        Resources res = getActivity().getResources();
-
-        List<ValidatorClassHandler> validators = new ArrayList<>();
-
-        List<String> names = new ArrayList<>();
-
-        for (Field field : getRenderer().getModel().getClass().getFields()) {
-
-            Annotation[] annotations = field.getDeclaredAnnotations();
-
-            for (Annotation annotation : annotations) {
-
-                String name = annotation.annotationType().getName().concat(VALIDATOR_SUFFIX);
-
-                Class<?> clazz = null;
-
-                try {
-
-                    if (names.contains(name))
-                        continue;
-
-                    clazz = Class.forName(name);
-
-                    Constructor<?> ctor = clazz.getConstructor(Resources.class);
-
-                    Validator object = (Validator) ctor.newInstance(res);
-
-                    names.add(name);
-
-                    validators.add(new ValidatorClassHandler(object, annotation));
-
-                } catch (Exception e) {
-
-                    continue;
-
-                }
-
-            }
-
-        }
-
-        return validate(validators.toArray(new ValidatorClassHandler[validators.size()]));
-
-    }
-
-    private ValidationResult validate(ValidatorClassHandler... handlers) {
-
-        ValidationResult result = new ValidationResult();
-
-        for (ValidatorClassHandler handler : handlers) {
-
-            result.concat(handler.validator.validate(handler.annotation.annotationType(),
-                    getRenderer()));
-
-        }
-
-        return result;
-
-    }
-
-    private class ValidatorClassHandler {
-
-        private Validator validator;
-
-        private Annotation annotation;
-
-        public ValidatorClassHandler(Validator validator, Annotation annotation) {
-
-            this.validator = validator;
-            this.annotation = annotation;
-
-        }
 
     }
 

@@ -1,24 +1,19 @@
 package com.divankits.mvc.validation;
 
-
-import com.divankits.mvc.IModel;
-
-import java.lang.reflect.Field;
+import com.divankits.mvc.generic.PropertyInfo;
 
 public class ValidationError {
 
     private int code;
     private int priority;
     private String message;
-    private Field field;
-    private IModel model;
+    private PropertyInfo property;
 
-    public ValidationError(IModel model, Field field, int code, int priority, String message) {
+    public ValidationError(PropertyInfo property , int code, int priority, String message) {
 
-        this.model = model;
         this.code = code;
         this.message = message;
-        this.field = field;
+        this.property = property;
         this.priority = priority;
 
     }
@@ -41,15 +36,9 @@ public class ValidationError {
 
     }
 
-    public IModel getModel() {
+    public PropertyInfo getField() {
 
-        return model;
-
-    }
-
-    public Field getField() {
-
-        return field;
+        return property;
 
     }
 

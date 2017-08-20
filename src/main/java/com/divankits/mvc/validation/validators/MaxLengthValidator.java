@@ -2,12 +2,10 @@ package com.divankits.mvc.validation.validators;
 
 import android.content.res.Resources;
 
-
-import com.divankits.mvc.IModel;
+import com.divankits.mvc.generic.PropertyInfo;
 import com.divankits.mvc.validation.Validator;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
 
 public class MaxLengthValidator extends Validator {
 
@@ -23,17 +21,31 @@ public class MaxLengthValidator extends Validator {
     }
 
     @Override
-    public boolean isValid(IModel model, Field field, Object value, Annotation modifier) {
+    public boolean isValid(PropertyInfo property, Annotation modifier) {
 
-        return ((String) value).length() <= ((MaxLength) modifier).value();
+        String value;
+
+        try {
+
+            value = (String) property.getValue();
+
+            return value.length() <= ((MaxLength) modifier).value();
+
+        } catch (IllegalAccessException e) {
+
+            e.printStackTrace();
+
+            return false;
+
+        }
 
     }
 
     @Override
-    public String getErrorDefaultMessage(Field field , Annotation modifier) {
+    public String getErrorDefaultMessage(PropertyInfo property, Annotation modifier) {
 
         return ("Field \"")
-                .concat(field.getName())
+                .concat(property.getName())
                 .concat("\" must be less than ")
                 .concat(String.valueOf(((MaxLength) modifier).value()))
                 .concat(" characters");

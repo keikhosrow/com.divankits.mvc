@@ -1,4 +1,4 @@
-package com.divankits.mvc;
+package com.divankits.mvc.forms;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

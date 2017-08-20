@@ -5,6 +5,7 @@ import android.content.res.Resources;
 import android.util.Patterns;
 
 import com.divankits.mvc.IModel;
+import com.divankits.mvc.generic.PropertyInfo;
 import com.divankits.mvc.validation.Validator;
 
 import java.lang.annotation.Annotation;
@@ -78,36 +79,36 @@ public class DataTypeValidator extends Validator {
     }
 
     @Override
-    public boolean isValid(IModel model, Field field, Object value, Annotation modifier) {
+    public boolean isValid(PropertyInfo property, Annotation modifier) {
 
         try {
 
-            return !hasTypeError((DataType) modifier, model , field);
+            return !hasTypeError((DataType) modifier, property);
 
         } catch (Exception e) {
 
             e.printStackTrace();
 
-        }
+            return false;
 
-        return true;
+        }
 
     }
 
     @Override
-    public String getErrorDefaultMessage(Field field, Annotation modifier) {
+    public String getErrorDefaultMessage(PropertyInfo property , Annotation modifier) {
 
         return ("Field \"")
-                .concat(field.getName())
+                .concat(property.getName())
                 .concat("\" is not valid ")
                 .concat(String.valueOf(((DataType)modifier) .value().toString()));
 
     }
 
-    private boolean hasTypeError(DataType dt, IModel model, Field field)
+    private boolean hasTypeError(DataType dt, PropertyInfo prop)
             throws NoSuchFieldException, IllegalAccessException {
 
-        String value = (String) model.getFieldValue(field.getName());
+        String value = (String) prop.getValue();
 
         switch (dt.value()) {
             case EmailAddress:

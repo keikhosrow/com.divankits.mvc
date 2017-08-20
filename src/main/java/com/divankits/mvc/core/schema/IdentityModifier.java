@@ -1,14 +1,12 @@
 package com.divankits.mvc.core.schema;
 
 
-import com.divankits.mvc.IModel;
 import com.divankits.mvc.core.ModelModifier;
 import com.divankits.mvc.core.ModifyOnce;
+import com.divankits.mvc.generic.PropertyInfo;
 
-import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.UUID;
-
 
 @ModifyOnce
 public class IdentityModifier extends ModelModifier<Identity> {
@@ -26,13 +24,13 @@ public class IdentityModifier extends ModelModifier<Identity> {
     }
 
     @Override
-    public Object modify(IModel model, Field field) {
+    public Object modify(PropertyInfo property) {
 
         Object value = null, newValue = null;
 
         try {
 
-            value = model.getFieldValue(field.getName());
+            value = property.getValue();
 
             if (value != null)
                 return value;
@@ -53,7 +51,7 @@ public class IdentityModifier extends ModelModifier<Identity> {
 
                 case Indexing:
 
-                    Class clazz = model.getClass();
+                    Class clazz = property.getOwner().getClass();
 
                     if (!counter.containsKey(clazz))
                         counter.put(clazz, -1);
@@ -81,13 +79,13 @@ public class IdentityModifier extends ModelModifier<Identity> {
     }
 
     @Override
-    public Object restore(IModel model, Field field) {
+    public Object restore(PropertyInfo property) {
 
         Object value = null;
 
         try {
 
-            value = model.getFieldValue(field.getName());
+            value = property.getValue();
 
         } catch (Exception e) {
 
@@ -99,7 +97,7 @@ public class IdentityModifier extends ModelModifier<Identity> {
 
     }
 
-    public void seed(Class Entity , int begin){
+    public void seed(Class Entity, int begin) {
 
         Class clazz = Entity.getClass();
 

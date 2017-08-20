@@ -1,4 +1,4 @@
-package com.divankits.mvc;
+package com.divankits.mvc.forms;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -7,5 +7,6 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
-public @interface Internal {
+public @interface Multibind {
+    Bind[] value();
 }
