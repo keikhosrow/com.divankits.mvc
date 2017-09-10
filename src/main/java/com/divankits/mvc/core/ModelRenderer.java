@@ -5,9 +5,6 @@ import android.app.Fragment;
 import android.content.Context;
 import android.content.res.Resources;
 import android.os.Bundle;
-import android.support.annotation.IdRes;
-import android.support.annotation.LayoutRes;
-import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -18,6 +15,7 @@ import com.divankits.mvc.forms.Bind;
 import com.divankits.mvc.forms.ItemView;
 import com.divankits.mvc.forms.View;
 import com.divankits.mvc.generic.PropertyInfo;
+import com.divankits.mvc.generic.Tuple;
 import com.divankits.mvc.validation.ValidationResult;
 import com.divankits.mvc.validation.Validator;
 
@@ -25,35 +23,20 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 
 public class ModelRenderer extends Fragment {
 
-    private static final Map<Class, Class> primitives;
+
     private static final String MODIFIERS_SUFFIX = "Modifier";
     private static final String VALIDATOR_SUFFIX = "Validator";
     private static final String CONVERTER_CONVERT_BACK = "convertBack";
     private static final String ERR_001 = "Submit is not defined in model";
     private static final String ERR_002 = "Layout is not defined in model";
     private static final String ERR_003 = "No View Bounds to Collection";
-
-    static {
-
-        primitives = new HashMap<>();
-        primitives.put(Boolean.class, Boolean.TYPE);
-        primitives.put(Byte.class, Byte.TYPE);
-        primitives.put(Character.class, Character.TYPE);
-        primitives.put(Float.class, Float.TYPE);
-        primitives.put(Integer.class, Integer.TYPE);
-        primitives.put(Long.class, Long.TYPE);
-        primitives.put(Short.class, Short.TYPE);
-        primitives.put(Double.class, Double.TYPE);
-
-    }
 
     private IOnModelChangedEventListener changeListener;
     private IModel mModel;
@@ -68,16 +51,16 @@ public class ModelRenderer extends Fragment {
 
     }
 
-    public void bindEvents() throws NoSuchFieldException, IllegalAccessException  {
+    public void bindEvents() throws NoSuchFieldException, IllegalAccessException {
 
         if (getOnModelChangedEventListener() == null)
             return;
 
-        for (PropertyInfo field : getModel().getProperties()) {
+        for (final PropertyInfo prop : getModel().getProperties()) {
 
             try {
 
-                ArrayList<BoundData> boundList = field.getBoundData();
+                ArrayList<BoundData> boundList = prop.getBoundData();
 
                 if (boundList.isEmpty())
                     continue;
@@ -86,8 +69,11 @@ public class ModelRenderer extends Fragment {
 
                     android.view.View v = getView().findViewById(details.Target);
 
-                    if (v == null)
+                    if (v == null) {
+
                         break;
+
+                    }
 
                     switch (details.Event) {
 
@@ -104,7 +90,7 @@ public class ModelRenderer extends Fragment {
 
                                     try {
 
-                                        Object value = getModel().getFieldValue(details.FieldName);
+                                        Object value = prop.getValue();
 
                                         getOnModelChangedEventListener().onFieldChanged(details, value);
 
@@ -225,7 +211,7 @@ public class ModelRenderer extends Fragment {
                         if (data.Converter != null)
                             newValue = data.Converter.convert(newValue);
 
-                        getModel().setFieldValue(prop.getName(), newValue);
+                        prop.setValue(newValue);
 
                         if (listener != null && data.Event == Bind.Events.Change)
                             listener.onFieldChanged(data, value);
@@ -297,7 +283,7 @@ public class ModelRenderer extends Fragment {
                         // updating values of fields
 
                         ModelRenderer.this.update(false)
-                                .modify(ModelRenderer.this.getModel() , false);
+                                .modify(ModelRenderer.this.getModel(), false);
 
                         if (changeListener != null)
                             changeListener.onSubmit(getModel());
@@ -330,17 +316,17 @@ public class ModelRenderer extends Fragment {
 
     public ModelRenderer setModel(IModel model) {
 
-        return setModel(model , -1);
+        return setModel(model, -1);
 
     }
 
-    public ModelRenderer setModel(IModel model , @LayoutRes int layoutId) {
+    public ModelRenderer setModel(IModel model, int layoutId) {
 
-        return setModel(model , layoutId , -1);
+        return setModel(model, layoutId, -1);
 
     }
 
-    public ModelRenderer setModel(IModel model , @LayoutRes int layoutId , @IdRes int submitId) {
+    public ModelRenderer setModel(IModel model, int layoutId, int submitId) {
 
         this.mModel = model;
         this.mLayoutId = layoutId;
@@ -358,7 +344,7 @@ public class ModelRenderer extends Fragment {
 
             return getViewAnnotationParams(ERR_001).submit();
 
-        }catch (Exception e){
+        } catch (Exception e) {
 
             return mSubmitId;
 
@@ -372,7 +358,7 @@ public class ModelRenderer extends Fragment {
 
             return getViewAnnotationParams(ERR_002).value();
 
-        }catch (Exception e){
+        } catch (Exception e) {
 
             return mLayoutId;
 
@@ -396,11 +382,11 @@ public class ModelRenderer extends Fragment {
 
     public ModelRenderer modify(IModel model, boolean restore) {
 
-        List<ModifierHandler> modifiers = new ArrayList<>();
+        List<Tuple<PropertyInfo , ModelModifier>> modifiers = new ArrayList<>();
 
         for (PropertyInfo prop : model.getProperties()) {
 
-            // check if field is collection or map
+            // check if field is collection
 
             if (prop.isCollection()) {
 
@@ -411,7 +397,8 @@ public class ModelRenderer extends Fragment {
                     if (value == null)
                         continue;
 
-                    Iterator collection = Iterable.class.cast(value).iterator();
+                    Iterator collection = prop.isArray() ? Arrays.asList(prop.getValue()).iterator() :
+                            Iterable.class.cast(value).iterator();
 
                     while (collection.hasNext()) {
 
@@ -454,7 +441,7 @@ public class ModelRenderer extends Fragment {
                     ModelModifier object = (ModelModifier) clazz.getConstructor(a.annotationType())
                             .newInstance(a);
 
-                    modifiers.add(new ModifierHandler(prop, object));
+                    modifiers.add(new Tuple(prop, object));
 
                 } catch (Exception e) {
 
@@ -466,8 +453,8 @@ public class ModelRenderer extends Fragment {
 
         }
 
-        for (ModifierHandler m : modifiers)
-            m.modifier.invoke(m.property, restore);
+        for (Tuple<PropertyInfo , ModelModifier> m : modifiers)
+            m.Item2.invoke(m.Item1, restore);
 
         return this;
 
@@ -498,7 +485,7 @@ public class ModelRenderer extends Fragment {
             throw new NullPointerException(ERR_003);
 
         return new ArrayAdapter<IModel>(mContext, getViewAnnotationParams(ERR_003).value(),
-                (List<IModel>) getModel().getFieldValue(prop.getName())) {
+                (List<IModel>) prop.getValue()) {
 
             @Override
             public android.view.View getView(int position, android.view.View convertView, ViewGroup parent) {
@@ -524,18 +511,18 @@ public class ModelRenderer extends Fragment {
 
                         for (BoundData b : dt) {
 
-                                Method m = findMethod(v ,prop, b, true);
+                            Method m = findMethod(v, prop, b, true);
 
-                                if (value != null && m != null) {
+                            if (value != null && m != null) {
 
-                                    android.view.View target = v.findViewById(b.Target);
+                                android.view.View target = v.findViewById(b.Target);
 
-                                    if (b.Converter != null)
-                                        value = b.Converter.convertBack(value);
+                                if (b.Converter != null)
+                                    value = b.Converter.convertBack(value);
 
-                                    m.invoke( target , value);
+                                m.invoke(target, value);
 
-                                }
+                            }
 
                         }
 
@@ -563,7 +550,7 @@ public class ModelRenderer extends Fragment {
             public void onItemClick(AdapterView<?> adapterView, android.view.View view, int i, long l) {
 
                 if (changeListener != null)
-                    changeListener.onCollectionItemSelected(mModel , adapterView.getAdapter().getItem(i));
+                    changeListener.onCollectionItemSelected(mModel, adapterView.getAdapter().getItem(i));
 
             }
 
@@ -571,7 +558,6 @@ public class ModelRenderer extends Fragment {
 
     }
 
-    @Nullable
     private Method findMethod(PropertyInfo property, BoundData data, boolean setter)
             throws NoSuchMethodException {
 
@@ -579,29 +565,25 @@ public class ModelRenderer extends Fragment {
 
     }
 
-    @Nullable
     private Method findMethod(android.view.View view, PropertyInfo property, BoundData data, boolean setter)
-            throws NoSuchMethodException , NullPointerException {
+            throws NoSuchMethodException, NullPointerException {
 
         Class compType, fieldType, fieldPrimitiveType;
 
-        compType = view.findViewById(data.Target).getClass();
         fieldType = property.getType();
-        fieldPrimitiveType = primitives.get(fieldType);
-
+        compType = view.findViewById(data.Target).getClass();
         Method method = null;
-
         boolean primitivesChecked = false;
+
 
         if (setter && data.Converter instanceof ValueConverter) {
 
-            fieldType = data.Converter.getClass()
-                    .getDeclaredMethod(CONVERTER_CONVERT_BACK, fieldType)
-                    .getReturnType();
-
-            fieldPrimitiveType = primitives.get(fieldType);
+            fieldType = Utilities.getConverterTypes(data.Converter).Item1;
 
         }
+
+        fieldPrimitiveType = Utilities.getPrimitive(fieldType);
+
 
         while (method == null) {
 
@@ -645,7 +627,7 @@ public class ModelRenderer extends Fragment {
 
         Resources res = getActivity().getResources();
 
-        List<ValidatorClassHandler> validators = new ArrayList<>();
+        List<Tuple<Validator , Annotation>> validators = new ArrayList<>();
 
         List<String> names = new ArrayList<>();
 
@@ -672,7 +654,7 @@ public class ModelRenderer extends Fragment {
 
                     names.add(name);
 
-                    validators.add(new ValidatorClassHandler(object, annotation));
+                    validators.add(new Tuple(object, annotation));
 
                 } catch (Exception e) {
 
@@ -684,53 +666,23 @@ public class ModelRenderer extends Fragment {
 
         }
 
-        return validate(validators.toArray(new ValidatorClassHandler[validators.size()]));
+        return validate(validators.toArray(new Tuple[validators.size()]));
 
     }
 
-    private ValidationResult validate(ValidatorClassHandler... handlers) {
+    private ValidationResult validate(Tuple<Validator , Annotation>... pairs) {
 
         ValidationResult result = new ValidationResult();
 
-        for (ValidatorClassHandler handler : handlers) {
+        for (Tuple<Validator , Annotation> p : pairs) {
 
-            result.concat(handler.validator.validate(handler.annotation.annotationType(), this));
+            result.concat(p.Item1.validate(p.Item2.annotationType(), this));
 
         }
 
         return result;
 
     }
-
-    private class ValidatorClassHandler {
-
-        private Validator validator;
-
-        private Annotation annotation;
-
-        public ValidatorClassHandler(Validator validator, Annotation annotation) {
-
-            this.validator = validator;
-            this.annotation = annotation;
-
-        }
-
-    }
-
-    private class ModifierHandler {
-
-        private PropertyInfo property;
-        private ModelModifier modifier;
-
-        public ModifierHandler(PropertyInfo property, ModelModifier modifier) {
-
-            this.property = property;
-            this.modifier = modifier;
-
-        }
-
-    }
-
 
 
 }

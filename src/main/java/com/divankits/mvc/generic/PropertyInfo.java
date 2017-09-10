@@ -1,10 +1,10 @@
 package com.divankits.mvc.generic;
 
-import com.divankits.mvc.forms.Bind;
 import com.divankits.mvc.IModel;
-import com.divankits.mvc.forms.Multibind;
 import com.divankits.mvc.core.BoundData;
 import com.divankits.mvc.core.ValueConverter;
+import com.divankits.mvc.forms.Bind;
+import com.divankits.mvc.forms.Multibind;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -15,14 +15,14 @@ public class PropertyInfo {
     private Field field;
     private Object owner;
 
-    public <T> PropertyInfo(T owner , Field field){
+    public <T> PropertyInfo(T owner, Field field) {
 
         this.field = field;
         this.owner = owner;
 
     }
 
-    public String getName(){
+    public String getName() {
 
         return field.getName();
 
@@ -50,12 +50,6 @@ public class PropertyInfo {
 
     }
 
-    public Object getOwner() {
-
-        return this.owner;
-
-    }
-
     public PropertyInfo setValue(Object value) throws NoSuchFieldException, IllegalAccessException {
 
         if (field.isAccessible()) {
@@ -76,7 +70,13 @@ public class PropertyInfo {
 
     }
 
-    public ArrayList<BoundData> getBoundData(){
+    public Object getOwner() {
+
+        return this.owner;
+
+    }
+
+    public ArrayList<BoundData> getBoundData() {
 
         ArrayList<BoundData> details = new ArrayList<>();
 
@@ -96,19 +96,19 @@ public class PropertyInfo {
 
     }
 
-    public <T extends Annotation> T getAnnotation(Class<T> annotationType){
+    public <T extends Annotation> T getAnnotation(Class<T> annotationType) {
 
         return field.getAnnotation(annotationType);
 
     }
 
-    public Annotation[] getDeclaredAnnotations(){
+    public Annotation[] getDeclaredAnnotations() {
 
         return field.getDeclaredAnnotations();
 
     }
 
-    public boolean isAnnotationPresent(Class<? extends Annotation> annotationType){
+    public boolean isAnnotationPresent(Class<? extends Annotation> annotationType) {
 
         return field.isAnnotationPresent(annotationType);
 
@@ -126,15 +126,27 @@ public class PropertyInfo {
 
     }
 
-    public boolean isCollection(){
+    public boolean isCollection() {
 
-        return Iterable.class.isAssignableFrom(field.getType());
+        return Iterable.class.isAssignableFrom(field.getType()) || isArray();
 
     }
 
-    public boolean isModel(){
+    public boolean isArray() {
+
+        return field.getType().isArray();
+
+    }
+
+    public boolean isModel() {
 
         return IModel.class.isAssignableFrom(field.getType());
+
+    }
+
+    public boolean isSynthetic() {
+
+        return field.isSynthetic();
 
     }
 

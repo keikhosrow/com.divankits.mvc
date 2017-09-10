@@ -1,14 +1,12 @@
 # Android MVC Framework
-
+> Current Version [2.2.0](https://github.com/Rmanaf/com.divankits.mvc)
 ## Samples
 1. [Todo List](https://github.com/Rmanaf/AndroidTodoList)
 ## How to use
 1. Clone a copy of the repo
-
 ```bash
 $ git clone git://Rmanaf/com.divankits.mvc.git
 ```
-
 2. Add module in your project
 
 3. Create a model and assign view by using "@View" annotation
@@ -56,8 +54,7 @@ public class TestModel extends Model {
     */
 ...
 ```
-6. Create controller
-
+6. Create a controller
 ```java
 public class TestController extends Controller {
 
@@ -69,7 +66,7 @@ public class TestController extends Controller {
 
 }
 ```
-7. Add a FrameLayout in your activity layout
+7. Add a FrameLayout in your main layout
 ```xml
 ...
 
@@ -88,7 +85,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        new TodoListController(this , R.id.placeholder);
+        new TestController(this , R.id.placeholder);
     }
 
 }

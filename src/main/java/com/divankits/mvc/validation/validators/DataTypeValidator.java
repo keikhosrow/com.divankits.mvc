@@ -4,12 +4,10 @@ package com.divankits.mvc.validation.validators;
 import android.content.res.Resources;
 import android.util.Patterns;
 
-import com.divankits.mvc.IModel;
 import com.divankits.mvc.generic.PropertyInfo;
 import com.divankits.mvc.validation.Validator;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;

@@ -3,10 +3,6 @@ package com.divankits.mvc;
 import android.app.Activity;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
-import android.support.annotation.AnimatorRes;
-import android.support.annotation.IdRes;
-import android.support.annotation.LayoutRes;
-import android.support.annotation.Nullable;
 import android.view.View;
 
 import com.divankits.mvc.core.BoundData;
@@ -126,7 +122,7 @@ public class Controller {
 
     }
 
-    public void setModel(IModel model, @LayoutRes int layoutId ){
+    public void setModel(IModel model, int layoutId ){
 
         setModel(model, layoutId , true);
 
@@ -138,19 +134,19 @@ public class Controller {
 
     }
 
-    public void setModel(IModel model, @LayoutRes int layoutId , boolean addToStack){
+    public void setModel(IModel model, int layoutId , boolean addToStack){
 
         setModel(model , layoutId , -1 , addToStack);
 
     }
 
-    public void setModel(IModel model, @LayoutRes int layoutId , @IdRes int submitId){
+    public void setModel(IModel model, int layoutId , int submitId){
 
         setModel(model , layoutId , submitId , true);
 
     }
 
-    public void setModel(IModel model, @LayoutRes int layoutId , @IdRes int submitId , boolean addToStack){
+    public void setModel(IModel model,  int layoutId , int submitId , boolean addToStack){
 
         FragmentTransaction ft = getFragmentManager().beginTransaction();
 
@@ -227,7 +223,6 @@ public class Controller {
 
     }
 
-    @Nullable
     private IModel popStack() {
 
         if (getStackEntryCount() > 0)
@@ -248,11 +243,11 @@ public class Controller {
 
     }
 
-    public void setAnimations(@AnimatorRes int a1, @AnimatorRes int a2) {
+    public void setAnimations(int a1, int a2) {
         animations = new int[]{a1, a2};
     }
 
-    public void setAnimations(@AnimatorRes int a1, @AnimatorRes int a2, @AnimatorRes int a3, @AnimatorRes int a4) {
+    public void setAnimations(int a1, int a2, int a3, int a4) {
         animations = new int[]{a1, a2, a3, a4};
     }
 

@@ -1,4 +1,4 @@
-package com.divankits.mvc.validation.validators;
+package com.divankits.mvc.net.json;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -7,8 +7,5 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
-public @interface MinLength {
-    int value();
-    int priority() default 0;
-    int error() default Integer.MIN_VALUE;
+public @interface Internal {
 }

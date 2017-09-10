@@ -14,7 +14,9 @@ public class IdentityModifier extends ModelModifier<Identity> {
     private static HashMap<Class, Integer> counter = new HashMap<>();
 
     public IdentityModifier(Identity modifier) {
+
         super(modifier);
+
     }
 
     public static int getRandomHex(int min, int max) {
@@ -97,17 +99,15 @@ public class IdentityModifier extends ModelModifier<Identity> {
 
     }
 
-    public void seed(Class Entity, int begin) {
+    public static void seed(Class entity, int begin) {
 
-        Class clazz = Entity.getClass();
-
-        if (!counter.containsKey(clazz)) {
-            counter.put(clazz, begin);
+        if (!counter.containsKey(entity)) {
+            counter.put(entity, begin);
             return;
         }
 
-        counter.remove(clazz);
-        counter.put(clazz, begin);
+        counter.remove(entity);
+        counter.put(entity, begin);
 
     }
 

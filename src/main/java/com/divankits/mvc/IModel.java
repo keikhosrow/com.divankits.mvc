@@ -2,7 +2,7 @@ package com.divankits.mvc;
 
 import com.divankits.mvc.generic.PropertyInfo;
 
-public interface IModel {
+public interface IModel  {
 
     String getName();
 
@@ -13,6 +13,5 @@ public interface IModel {
     Object getFieldValue(String field) throws NoSuchFieldException, IllegalAccessException;
 
     void setFieldValue(String field, Object value) throws NoSuchFieldException, IllegalAccessException;
-
 
 }

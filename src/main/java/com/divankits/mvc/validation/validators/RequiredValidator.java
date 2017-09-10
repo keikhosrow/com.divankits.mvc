@@ -2,12 +2,10 @@ package com.divankits.mvc.validation.validators;
 
 import android.content.res.Resources;
 
-import com.divankits.mvc.IModel;
 import com.divankits.mvc.generic.PropertyInfo;
 import com.divankits.mvc.validation.Validator;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
 
 
 public class RequiredValidator extends Validator {

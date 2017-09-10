@@ -6,6 +6,6 @@ import com.divankits.mvc.security.ISecureModel;
 public interface IWebModel extends ISecureModel {
 
     String toJSON();
-    IModel fromJSON(String json);
+    IWebModel fromJSON(String json);
 
 }
