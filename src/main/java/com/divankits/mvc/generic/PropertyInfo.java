@@ -1,6 +1,6 @@
 package com.divankits.mvc.generic;
 
-import com.divankits.mvc.IModel;
+import com.divankits.mvc.Model;
 import com.divankits.mvc.core.BoundData;
 import com.divankits.mvc.core.ValueConverter;
 import com.divankits.mvc.forms.Bind;
@@ -140,7 +140,7 @@ public class PropertyInfo {
 
     public boolean isModel() {
 
-        return IModel.class.isAssignableFrom(field.getType());
+        return Model.class.isAssignableFrom(field.getType());
 
     }
 

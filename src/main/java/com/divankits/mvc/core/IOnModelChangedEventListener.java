@@ -1,19 +1,15 @@
 package com.divankits.mvc.core;
 
-
 import android.view.View;
 
-import com.divankits.mvc.IModel;
-import com.divankits.mvc.core.BoundData;
-
-import java.lang.reflect.Field;
+import com.divankits.mvc.Model;
 
 public interface IOnModelChangedEventListener {
 
     void onFieldChanged(BoundData details , Object oldValue);
-    void onSubmit(IModel model);
+    void onSubmit(Model model);
     void onCreate(View view);
-    void onCollectionItemSelected(IModel model , Object item);
+    void onCollectionItemSelected(Model model , Object item);
 
 }
 

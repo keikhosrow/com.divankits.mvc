@@ -10,7 +10,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 
-import com.divankits.mvc.IModel;
+import com.divankits.mvc.Model;
 import com.divankits.mvc.forms.Bind;
 import com.divankits.mvc.forms.ItemView;
 import com.divankits.mvc.forms.View;
@@ -39,7 +39,7 @@ public class ModelRenderer extends Fragment {
     private static final String ERR_003 = "No View Bounds to Collection";
 
     private IOnModelChangedEventListener changeListener;
-    private IModel mModel;
+    private Model mModel;
     private android.view.View mView;
     private Context mContext;
     private int mLayoutId;
@@ -142,7 +142,7 @@ public class ModelRenderer extends Fragment {
 
     }
 
-    public ModelRenderer update(IModel model, final boolean fromModel) {
+    public ModelRenderer update(Model model, final boolean fromModel) {
 
         IOnModelChangedEventListener listener = getOnModelChangedEventListener();
 
@@ -308,25 +308,25 @@ public class ModelRenderer extends Fragment {
 
     }
 
-    public IModel getModel() {
+    public Model getModel() {
 
         return this.mModel;
 
     }
 
-    public ModelRenderer setModel(IModel model) {
+    public ModelRenderer setModel(Model model) {
 
         return setModel(model, -1);
 
     }
 
-    public ModelRenderer setModel(IModel model, int layoutId) {
+    public ModelRenderer setModel(Model model, int layoutId) {
 
         return setModel(model, layoutId, -1);
 
     }
 
-    public ModelRenderer setModel(IModel model, int layoutId, int submitId) {
+    public ModelRenderer setModel(Model model, int layoutId, int submitId) {
 
         this.mModel = model;
         this.mLayoutId = layoutId;
@@ -380,7 +380,7 @@ public class ModelRenderer extends Fragment {
 
     }
 
-    public ModelRenderer modify(IModel model, boolean restore) {
+    public ModelRenderer modify(Model model, boolean restore) {
 
         List<Tuple<PropertyInfo , ModelModifier>> modifiers = new ArrayList<>();
 
@@ -406,9 +406,9 @@ public class ModelRenderer extends Fragment {
 
                         // apply item modifiers
 
-                        if (item instanceof IModel) {
+                        if (item instanceof Model) {
 
-                            modify((IModel) item, restore);
+                            modify((Model) item, restore);
 
                         }
 
@@ -476,7 +476,7 @@ public class ModelRenderer extends Fragment {
 
     }
 
-    private ArrayAdapter<IModel> createCollectionAdapter(AdapterView view, PropertyInfo prop)
+    private ArrayAdapter<Model> createCollectionAdapter(AdapterView view, PropertyInfo prop)
             throws NoSuchFieldException, IllegalAccessException, NullPointerException {
 
         final ItemView iw = prop.getAnnotation(ItemView.class);
@@ -484,8 +484,8 @@ public class ModelRenderer extends Fragment {
         if (iw == null)
             throw new NullPointerException(ERR_003);
 
-        return new ArrayAdapter<IModel>(mContext, getViewAnnotationParams(ERR_003).value(),
-                (List<IModel>) prop.getValue()) {
+        return new ArrayAdapter<Model>(mContext, getViewAnnotationParams(ERR_003).value(),
+                (List<Model>) prop.getValue()) {
 
             @Override
             public android.view.View getView(int position, android.view.View convertView, ViewGroup parent) {
@@ -496,7 +496,7 @@ public class ModelRenderer extends Fragment {
                 if (v == null)
                     v = LayoutInflater.from(getContext()).inflate(iw.value(), null);
 
-                IModel p = getItem(position);
+                Model p = getItem(position);
 
                 if (p == null)
                     return v;

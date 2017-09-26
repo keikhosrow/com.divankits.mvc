@@ -1,7 +1,7 @@
 package com.divankits.mvc.net.json;
 
 
-import com.divankits.mvc.IModel;
+import com.divankits.mvc.Model;
 import com.divankits.mvc.core.Utilities;
 import com.divankits.mvc.generic.PropertyInfo;
 
@@ -12,10 +12,8 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 public class JSONBuilder {
 
@@ -232,7 +230,7 @@ public class JSONBuilder {
 
                 Class type = prop.getClass();
 
-                if (IModel.class.isAssignableFrom(type)) {
+                if (Model.class.isAssignableFrom(type)) {
 
                     object(prop);
 

@@ -21,7 +21,7 @@ public class Controller {
     private Activity activity;
     private int placeholder;
     private int[] animations;
-    private List<IModel> stack;
+    private List<Model> stack;
     private IOnModelChangedEventListener mListener;
     private String view;
 
@@ -102,7 +102,7 @@ public class Controller {
 
     }
 
-    public void view(String page, IModel model) {
+    public void view(String page, Model model) {
 
         setModel(model);
 
@@ -110,43 +110,43 @@ public class Controller {
 
     }
 
-    public void view(IModel model) {
+    public void view(Model model) {
 
         setModel(model);
 
     }
 
-    public void setModel(IModel model) {
+    public void setModel(Model model) {
 
-        setModel(model, -1 , true);
-
-    }
-
-    public void setModel(IModel model, int layoutId ){
-
-        setModel(model, layoutId , true);
+        setModel(model, -1, true);
 
     }
 
-    public void setModel(IModel model, boolean addToStack) {
+    public void setModel(Model model, int layoutId) {
 
-        setModel(model,  -1 ,  addToStack);
-
-    }
-
-    public void setModel(IModel model, int layoutId , boolean addToStack){
-
-        setModel(model , layoutId , -1 , addToStack);
+        setModel(model, layoutId, true);
 
     }
 
-    public void setModel(IModel model, int layoutId , int submitId){
+    public void setModel(Model model, boolean addToStack) {
 
-        setModel(model , layoutId , submitId , true);
+        setModel(model, -1, addToStack);
 
     }
 
-    public void setModel(IModel model,  int layoutId , int submitId , boolean addToStack){
+    public void setModel(Model model, int layoutId, boolean addToStack) {
+
+        setModel(model, layoutId, -1, addToStack);
+
+    }
+
+    public void setModel(Model model, int layoutId, int submitId) {
+
+        setModel(model, layoutId, submitId, true);
+
+    }
+
+    public void setModel(Model model, int layoutId, int submitId, boolean addToStack) {
 
         FragmentTransaction ft = getFragmentManager().beginTransaction();
 
@@ -161,7 +161,7 @@ public class Controller {
             addToStack();
 
         setRenderer(new ModelRenderer())
-                .setModel(model, layoutId , submitId)
+                .setModel(model, layoutId, submitId)
                 .setOnModelChangedEventListener(new IOnModelChangedEventListener() {
 
                     @Override
@@ -173,7 +173,7 @@ public class Controller {
                     }
 
                     @Override
-                    public void onSubmit(IModel model) {
+                    public void onSubmit(Model model) {
 
                         Controller.this.onSubmit(model);
 
@@ -191,10 +191,10 @@ public class Controller {
                     }
 
                     @Override
-                    public void onCollectionItemSelected(IModel model , Object item) {
+                    public void onCollectionItemSelected(Model model, Object item) {
 
-                        if(mListener != null)
-                            mListener.onCollectionItemSelected(model , item);
+                        if (mListener != null)
+                            mListener.onCollectionItemSelected(model, item);
 
                     }
 
@@ -205,36 +205,15 @@ public class Controller {
 
     }
 
-    private void addToStack() {
-
-        stack.add(getRenderer().getModel());
-
-    }
-
     public int getStackEntryCount() {
 
         return stack.size();
 
     }
 
-    public void clearStack() {
-
-        stack.clear();
-
-    }
-
-    private IModel popStack() {
-
-        if (getStackEntryCount() > 0)
-            return stack.remove(stack.size() - 1);
-
-        return null;
-
-    }
-
     public boolean popBackStack() {
 
-        IModel model = popStack();
+        Model model = popStack();
 
         if (model != null)
             setModel(model, false);
@@ -257,7 +236,7 @@ public class Controller {
 
     }
 
-    public void onSubmit(IModel model) {
+    public void onSubmit(Model model) {
 
         try {
 
@@ -304,6 +283,27 @@ public class Controller {
             e.printStackTrace();
 
         }
+
+    }
+
+    public void clearStack() {
+
+        stack.clear();
+
+    }
+
+    private void addToStack() {
+
+        stack.add(getRenderer().getModel());
+
+    }
+
+    private Model popStack() {
+
+        if (getStackEntryCount() > 0)
+            return stack.remove(stack.size() - 1);
+
+        return null;
 
     }
 

@@ -1,16 +1,16 @@
 package com.divankits.mvc.net.converters;
 
 import com.divankits.mvc.core.ValueConverter;
-import com.divankits.mvc.net.IWebModel;
+import com.divankits.mvc.net.WebModel;
 import com.divankits.mvc.net.json.JSONBuilder;
 import com.divankits.mvc.net.json.JSONParser;
 
 import org.json.JSONException;
 
-public class WebModelToJSONBuilderConverter extends ValueConverter<IWebModel, JSONBuilder> {
+public class WebModelToJSONBuilderConverter extends ValueConverter<WebModel, JSONBuilder> {
 
     @Override
-    public JSONBuilder convert(IWebModel value) {
+    public JSONBuilder convert(WebModel value) {
 
         JSONBuilder builder = new JSONBuilder();
 
@@ -29,13 +29,13 @@ public class WebModelToJSONBuilderConverter extends ValueConverter<IWebModel, JS
     }
 
     @Override
-    public IWebModel convertBack(JSONBuilder value)  {
+    public WebModel convertBack(JSONBuilder value)  {
 
-        IWebModel result = null;
+        WebModel result = null;
 
         try {
 
-            result = new JSONParser(IWebModel.class , value).parse();
+            result = new JSONParser(WebModel.class , value).parse();
 
         } catch (JSONException e) {
 

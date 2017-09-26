@@ -3,7 +3,7 @@ package com.divankits.mvc.validation;
 
 import android.content.res.Resources;
 
-import com.divankits.mvc.IModel;
+import com.divankits.mvc.Model;
 import com.divankits.mvc.core.BoundData;
 import com.divankits.mvc.core.ModelRenderer;
 import com.divankits.mvc.generic.PropertyInfo;
@@ -76,7 +76,7 @@ public abstract class Validator {
 
         try {
 
-            IModel model = renderer.getModel();
+            Model model = renderer.getModel();
 
             for (PropertyInfo prop : model.getProperties()) {
 

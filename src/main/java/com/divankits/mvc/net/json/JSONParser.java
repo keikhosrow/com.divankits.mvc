@@ -4,7 +4,7 @@ import android.util.Log;
 
 import com.divankits.mvc.core.Utilities;
 import com.divankits.mvc.generic.PropertyInfo;
-import com.divankits.mvc.net.IWebModel;
+import com.divankits.mvc.net.WebModel;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -15,7 +15,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 
 
-public class JSONParser<T extends IWebModel> {
+public class JSONParser<T extends WebModel> {
 
     private final static String ARRAY_SEPARATOR = ",";
     private final Class<T> typeClass;
